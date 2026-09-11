@@ -1,24 +1,30 @@
-# Compiled class file
-*.class
+﻿# Flutter
+flutter-app/build/
+flutter-app/.dart_tool/
+flutter-app/.packages
+flutter-app/android/.gradle/
+flutter-app/android/app/build/
 
-# Log file
-*.log
+# Spring Boot
+spring-boot-backend/build/
+spring-boot-backend/.gradle/
+spring-boot-backend/bin/
 
-# BlueJ files
-*.ctxt
+# AI Service
+ai-service/.venv/
+ai-service/__pycache__/
+ai-service/.pytest_cache/
+ai-service/*.pyc
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
+# IDE
+.idea/
+.vscode/
+*.iml
 
-# Package Files #
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
+# OS
+.DS_Store
+Thumbs.db
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
+# Environment
+.env
+*.env.local
