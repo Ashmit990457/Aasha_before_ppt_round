@@ -1,0 +1,30 @@
+﻿# Flutter
+flutter-app/build/
+flutter-app/.dart_tool/
+flutter-app/.packages
+flutter-app/android/.gradle/
+flutter-app/android/app/build/
+
+# Spring Boot
+spring-boot-backend/build/
+spring-boot-backend/.gradle/
+spring-boot-backend/bin/
+
+# AI Service
+ai-service/.venv/
+ai-service/__pycache__/
+ai-service/.pytest_cache/
+ai-service/*.pyc
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.env.local
