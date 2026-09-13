@@ -157,8 +157,9 @@ class FakeImageService:
         self.cache = FakeCache()
 
     def encode(self, key):
-        self.calls.append(key)
-        return self.embeddings.get(key, [0.0])
+        lookup = key.decode("utf-8", errors="replace") if isinstance(key, bytes) else key
+        self.calls.append(lookup)
+        return self.embeddings.get(lookup, [0.0])
 
     def embedding_for_storage(self, storage_id, _storage, timing_callback=None):
         self.calls.append(storage_id)
@@ -218,7 +219,7 @@ def test_image_signal_changes_relative_ranking_and_breakdown_stays_internal(monk
     assert ranked[0].clip_score == 1.0
     assert ranked[1].clip_score == 0.0
     assert "image_score" not in _public_result(ranked[0]).model_dump()
-    assert storage.deleted == ["user"]
+    assert storage.deleted == []
     assert image_service.calls.count("user") == 1
 
 

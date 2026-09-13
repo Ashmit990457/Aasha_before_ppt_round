@@ -6,6 +6,7 @@ import com.aasha.web.entity.NormalRecord;
 import com.aasha.web.repository.CampRepository;
 import com.aasha.web.repository.CriticalRecordRepository;
 import com.aasha.web.repository.NormalRecordRepository;
+import com.aasha.web.service.NotificationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,11 +21,13 @@ public class ApiController {
     private final CampRepository campRepo;
     private final NormalRecordRepository normalRepo;
     private final CriticalRecordRepository criticalRepo;
+    private final NotificationService notificationService;
 
-    public ApiController(CampRepository campRepo, NormalRecordRepository normalRepo, CriticalRecordRepository criticalRepo) {
+    public ApiController(CampRepository campRepo, NormalRecordRepository normalRepo, CriticalRecordRepository criticalRepo, NotificationService notificationService) {
         this.campRepo = campRepo;
         this.normalRepo = normalRepo;
         this.criticalRepo = criticalRepo;
+        this.notificationService = notificationService;
     }
 
     // ==================== CAMPS ====================
@@ -74,7 +77,14 @@ public class ApiController {
     @PostMapping("/normal-records")
     public ResponseEntity<NormalRecord> createNormalRecord(@RequestBody NormalRecord record) {
         record.setId(UUID.randomUUID().toString());
-        return ResponseEntity.ok(normalRepo.save(record));
+        NormalRecord saved = normalRepo.save(record);
+
+        notificationService.onNewRecordCreated(
+            saved.getId(), "NORMAL", saved.getName(), saved.getAge(),
+            saved.getCampName(), saved.getOfficerName(), saved.getOfficerContact()
+        );
+
+        return ResponseEntity.ok(saved);
     }
 
     @PutMapping("/normal-records/{id}")
@@ -116,7 +126,14 @@ public class ApiController {
     @PostMapping("/critical-records")
     public ResponseEntity<CriticalRecord> createCriticalRecord(@RequestBody CriticalRecord record) {
         record.setId(UUID.randomUUID().toString());
-        return ResponseEntity.ok(criticalRepo.save(record));
+        CriticalRecord saved = criticalRepo.save(record);
+
+        notificationService.onNewRecordCreated(
+            saved.getId(), "CRITICAL", saved.getName(), saved.getAge(),
+            saved.getCampName(), saved.getOfficerName(), saved.getOfficerContact()
+        );
+
+        return ResponseEntity.ok(saved);
     }
 
     @PutMapping("/critical-records/{id}")

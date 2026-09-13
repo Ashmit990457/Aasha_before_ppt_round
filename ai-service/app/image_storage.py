@@ -73,6 +73,9 @@ class ImageStorageService(ABC):
     @abstractmethod
     def delete_image(self, storage_id: str) -> None: ...
 
+    @abstractmethod
+    def public_image_url(self, storage_id: str) -> str: ...
+
 
 class InMemoryImageStorageService(ImageStorageService):
     """Test-only storage; no cloud upload is performed by Step 11A."""

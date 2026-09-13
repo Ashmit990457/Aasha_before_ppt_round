@@ -6,6 +6,7 @@ public class SearchRequest {
     private String lastKnownLocation = "";
     private String additionalDetails = "";
     private String photo;
+    private String phone = "";
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -17,6 +18,8 @@ public class SearchRequest {
     public void setAdditionalDetails(String additionalDetails) { this.additionalDetails = additionalDetails; }
     public String getPhoto() { return photo; }
     public void setPhoto(String photo) { this.photo = photo; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 
     public boolean hasName() {
         return name != null && !name.trim().isEmpty();

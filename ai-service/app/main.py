@@ -5,29 +5,38 @@ from fastapi import FastAPI, HTTPException
 
 from .data_sources import DemoRecordDataSource, FirestoreRecordDataSource, initialize_firestore_client
 from .models import MatchMoreRequest, MatchRequest, MatchResponse, MatchResult
-from .scoring import CandidateRecord, MatchScoringConfig, MatchScoringService, ScoredCandidate
+from .scoring import MatchScoringService, ScoredCandidate
 
 app = FastAPI(title="DisasterConnect AI Matching Engine")
 
-_text_similarity = None
 _scoring = None
 _image_similarity = None
+_face_similarity = None
 _image_storage = None
 
 PAGE_SIZE = 3
 
 
 def _get_services():
-    global _text_similarity, _scoring, _image_similarity, _image_storage
+    global _scoring, _image_similarity, _face_similarity, _image_storage
     if _scoring is None:
         from .text_similarity import TextSimilarityService
         from .image_similarity import ImageSimilarityService
+        from .face_similarity import FaceSimilarityService
         from .image_storage import InMemoryImageStorageService
-        _text_similarity = TextSimilarityService()
-        _scoring = MatchScoringService(_text_similarity)
+        _scoring = MatchScoringService(TextSimilarityService())
         _image_similarity = ImageSimilarityService()
+        try:
+            _image_similarity.load()
+        except Exception:
+            _image_similarity = None
+        try:
+            _face_similarity = FaceSimilarityService()
+            _face_similarity.load_model()
+        except Exception:
+            _face_similarity = None
         _image_storage = InMemoryImageStorageService()
-    return _scoring, _image_similarity, _image_storage
+    return _scoring, _image_similarity, _face_similarity, _image_storage
 
 
 def _normal_photo_url(encoded: Optional[str]) -> Optional[str]:
@@ -74,7 +83,7 @@ def _public_result(scored: ScoredCandidate) -> MatchResult:
 
 
 def _rank_candidates(query: dict, candidates: list) -> list[ScoredCandidate]:
-    scoring, image_similarity, image_storage = _get_services()
+    scoring, image_similarity, face_similarity, image_storage = _get_services()
     metadata_scored = [
         scoring.score(query, candidate) for candidate in candidates
     ]
@@ -83,7 +92,37 @@ def _rank_candidates(query: dict, candidates: list) -> list[ScoredCandidate]:
     if not has_photo:
         return metadata_scored
 
-    user_embedding = image_similarity.encode(query["photo"])
+    photo_raw = query["photo"]
+    if isinstance(photo_raw, str):
+        import base64 as _b64
+        try:
+            decoded = _b64.b64decode(photo_raw, validate=True)
+            _JPEG = b'\xff\xd8\xff'
+            _PNG = b'\x89PNG'
+            _WEBP = b'RIFF'
+            if len(decoded) > 100 and (decoded[:3] == _JPEG or decoded[:4] == _PNG or decoded[:4] == _WEBP):
+                photo_bytes = decoded
+            else:
+                photo_bytes = photo_raw.encode("utf-8")
+        except Exception:
+            photo_bytes = photo_raw.encode("utf-8")
+    else:
+        photo_bytes = photo_raw
+
+    user_clip_embedding = None
+    user_face_embedding = None
+
+    if image_similarity is not None:
+        try:
+            user_clip_embedding = image_similarity.encode(photo_bytes)
+        except Exception:
+            user_clip_embedding = None
+
+    if face_similarity is not None:
+        try:
+            user_face_embedding = face_similarity.get_embedding(photo_bytes)
+        except Exception:
+            user_face_embedding = None
 
     metadata_scored.sort(key=lambda s: s.match_score, reverse=True)
     shortlist = metadata_scored[:scoring.config.image_shortlist_size]
@@ -92,22 +131,29 @@ def _rank_candidates(query: dict, candidates: list) -> list[ScoredCandidate]:
     for scored in metadata_scored:
         candidate = scored.candidate
         clip_score = None
+        face_score = None
+
         if scored in shortlist and candidate.image_storage_id:
-            try:
-                candidate_embedding = image_similarity.embedding_for_storage(
-                    candidate.image_storage_id, image_storage
-                )
-                clip_score = image_similarity.similarity(user_embedding, candidate_embedding)
-            except Exception:
-                clip_score = None
+            if user_clip_embedding is not None:
+                try:
+                    candidate_embedding = image_similarity.embedding_for_storage(
+                        candidate.image_storage_id, image_storage
+                    )
+                    clip_score = image_similarity.similarity(user_clip_embedding, candidate_embedding)
+                except Exception:
+                    clip_score = None
 
-        updated = scoring.add_image_scores(query, scored, clip_score=clip_score)
+            if user_face_embedding is not None and face_similarity is not None:
+                try:
+                    candidate_face_embedding = face_similarity.embedding_for_storage(
+                        candidate.image_storage_id, image_storage
+                    )
+                    face_score = face_similarity.similarity(user_face_embedding, candidate_face_embedding)
+                except Exception:
+                    face_score = None
+
+        updated = scoring.add_image_scores(query, scored, clip_score=clip_score, face_score=face_score)
         results.append(updated)
-
-    try:
-        image_storage.delete_image(query["photo"])
-    except Exception:
-        pass
 
     results.sort(key=lambda s: s.match_score, reverse=True)
     return results

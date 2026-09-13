@@ -192,7 +192,14 @@ class _SearchRecordsScreenState extends State<SearchRecordsScreen> {
               if (clothing != null) _buildDetail('Last Clothing', clothing),
               const SizedBox(height: 32),
               ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  Navigator.pop(context);
+                  if (isCritical) {
+                    Navigator.pushNamed(context, '/critical_record_details', arguments: record as CriticalRecord);
+                  } else {
+                    Navigator.pushNamed(context, '/normal_record_details', arguments: record as NormalRecord);
+                  }
+                },
                 child: const Text('Update Status'),
               ),
             ],

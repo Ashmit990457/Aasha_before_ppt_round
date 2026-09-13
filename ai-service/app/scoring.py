@@ -173,7 +173,7 @@ class MatchScoringService:
             components.append((max(0.0, min(1.0, face_score)), self.config.face_weight))
 
         weight_total = sum(weight for _, weight in components)
-        final_score = 100 * sum(score * weight for score, weight in components) / weight_total
+        final_score = 100 * sum(score * weight for score, weight in components) / weight_total if weight_total else 0.0
 
         scored = ScoredCandidate(
             candidate,
