@@ -1,11 +1,10 @@
 package com.aasha.web.service;
 
 import com.aasha.web.dto.ImageStorageReference;
-import com.aasha.web.entity.CriticalRecord;
 import com.aasha.web.entity.NormalRecord;
+import com.aasha.web.entity.CriticalRecord;
 import com.aasha.web.repository.CriticalRecordRepository;
 import com.aasha.web.repository.NormalRecordRepository;
-import io.minio.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.*;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
@@ -24,32 +24,26 @@ public class PhotoService {
 
     private final NormalRecordRepository normalRepo;
     private final CriticalRecordRepository criticalRepo;
-    private final MinioClient minioClient;
-
-    @Value("${minio.bucket}")
-    private String bucket;
+    private final Path uploadDir;
 
     private final Map<String, byte[]> temporaryStore = new ConcurrentHashMap<>();
 
-    public PhotoService(NormalRecordRepository normalRepo,
-                        CriticalRecordRepository criticalRepo,
-                        MinioClient minioClient) {
+    public PhotoService(NormalRecordRepository normalRepo, CriticalRecordRepository criticalRepo) throws IOException {
         this.normalRepo = normalRepo;
         this.criticalRepo = criticalRepo;
-        this.minioClient = minioClient;
+        String userDir = System.getProperty("user.dir");
+        this.uploadDir = Paths.get(userDir, "uploads", "photos");
+        Files.createDirectories(uploadDir);
+        log.info("Upload directory: {}", uploadDir.toAbsolutePath());
     }
 
     public ImageStorageReference uploadNormalPhoto(String recordId, MultipartFile file) throws Exception {
-        String objectName = "normal/" + recordId + "/" + UUID.randomUUID() + getExtension(file);
-        uploadToMinio(objectName, file);
+        String fileName = UUID.randomUUID() + getExtension(file);
+        Path filePath = uploadDir.resolve(recordId).resolve(fileName);
+        Files.createDirectories(filePath.getParent());
+        Files.write(filePath, file.getBytes());
 
-        String photoUrl = minioClient.getPresignedObjectUrl(
-                GetPresignedObjectUrlArgs.builder()
-                        .bucket(bucket)
-                        .object(objectName)
-                        .method(io.minio.http.Method.GET)
-                        .build()
-        );
+        String photoUrl = "/uploads/" + recordId + "/" + fileName;
 
         normalRepo.findById(recordId).ifPresent(record -> {
             record.setPhotoUrl(photoUrl);
@@ -59,29 +53,17 @@ public class PhotoService {
         String assetId = UUID.randomUUID().toString();
         temporaryStore.put(assetId, file.getBytes());
 
-        return new ImageStorageReference(
-            "minio",
-            recordId,
-            assetId,
-            "image",
-            "stored",
-            "public",
-            file.getContentType() != null ? file.getContentType() : "image/jpeg",
-            (int) file.getSize()
-        );
+        return new ImageStorageReference("local", recordId, assetId, "image", "stored", "public",
+                file.getContentType() != null ? file.getContentType() : "image/jpeg", (int) file.getSize());
     }
 
     public ImageStorageReference uploadCriticalPhoto(String recordId, MultipartFile file) throws Exception {
-        String objectName = "critical/" + recordId + "/" + UUID.randomUUID() + getExtension(file);
-        uploadToMinio(objectName, file);
+        String fileName = "critical/" + recordId + "/" + UUID.randomUUID() + getExtension(file);
+        Path filePath = uploadDir.resolve(fileName);
+        Files.createDirectories(filePath.getParent());
+        Files.write(filePath, file.getBytes());
 
-        String photoUrl = minioClient.getPresignedObjectUrl(
-                GetPresignedObjectUrlArgs.builder()
-                        .bucket(bucket)
-                        .object(objectName)
-                        .method(io.minio.http.Method.GET)
-                        .build()
-        );
+        String photoUrl = "/api/v1/images/file/" + fileName;
 
         criticalRepo.findById(recordId).ifPresent(record -> {
             record.setPhotoUrl(photoUrl);
@@ -91,29 +73,17 @@ public class PhotoService {
         String assetId = UUID.randomUUID().toString();
         temporaryStore.put(assetId, file.getBytes());
 
-        return new ImageStorageReference(
-            "minio",
-            recordId,
-            assetId,
-            "image",
-            "stored",
-            "public",
-            file.getContentType() != null ? file.getContentType() : "image/jpeg",
-            (int) file.getSize()
-        );
+        return new ImageStorageReference("local", recordId, assetId, "image", "stored", "public",
+                file.getContentType() != null ? file.getContentType() : "image/jpeg", (int) file.getSize());
     }
 
     public ImageStorageReference uploadCriticalClothing(String recordId, MultipartFile file) throws Exception {
-        String objectName = "critical-clothing/" + recordId + "/" + UUID.randomUUID() + getExtension(file);
-        uploadToMinio(objectName, file);
+        String fileName = "critical-clothing/" + recordId + "/" + UUID.randomUUID() + getExtension(file);
+        Path filePath = uploadDir.resolve(fileName);
+        Files.createDirectories(filePath.getParent());
+        Files.write(filePath, file.getBytes());
 
-        String photoUrl = minioClient.getPresignedObjectUrl(
-                GetPresignedObjectUrlArgs.builder()
-                        .bucket(bucket)
-                        .object(objectName)
-                        .method(io.minio.http.Method.GET)
-                        .build()
-        );
+        String photoUrl = "/api/v1/images/file/" + fileName;
 
         criticalRepo.findById(recordId).ifPresent(record -> {
             record.setClothingPhotoUrl(photoUrl);
@@ -123,35 +93,32 @@ public class PhotoService {
         String assetId = UUID.randomUUID().toString();
         temporaryStore.put(assetId, file.getBytes());
 
-        return new ImageStorageReference(
-            "minio",
-            recordId,
-            assetId,
-            "image",
-            "stored",
-            "public",
-            file.getContentType() != null ? file.getContentType() : "image/jpeg",
-            (int) file.getSize()
-        );
+        return new ImageStorageReference("local", recordId, assetId, "image", "stored", "public",
+                file.getContentType() != null ? file.getContentType() : "image/jpeg", (int) file.getSize());
     }
 
     public ImageStorageReference uploadMatchInput(String requestId, MultipartFile file) throws Exception {
-        String objectName = "match-input/" + requestId + "/" + UUID.randomUUID() + getExtension(file);
-        uploadToMinio(objectName, file);
+        String fileName = "match-input/" + requestId + "/" + UUID.randomUUID() + getExtension(file);
+        Path filePath = uploadDir.resolve(fileName);
+        Files.createDirectories(filePath.getParent());
+        Files.write(filePath, file.getBytes());
 
         String assetId = UUID.randomUUID().toString();
         temporaryStore.put(assetId, file.getBytes());
 
-        return new ImageStorageReference(
-            "minio",
-            requestId,
-            assetId,
-            "image",
-            "temporary",
-            "private",
-            file.getContentType() != null ? file.getContentType() : "image/jpeg",
-            (int) file.getSize()
-        );
+        return new ImageStorageReference("local", requestId, assetId, "image", "stored", "private",
+                file.getContentType() != null ? file.getContentType() : "image/jpeg", (int) file.getSize());
+    }
+
+    public byte[] getImageBytes(String path) throws IOException {
+        Path filePath = uploadDir.resolve(path);
+        log.info("Looking for file: {} (absolute: {})", filePath, filePath.toAbsolutePath());
+        if (Files.exists(filePath)) {
+            log.info("File found, reading bytes");
+            return Files.readAllBytes(filePath);
+        }
+        log.warn("File not found: {}", filePath.toAbsolutePath());
+        return temporaryStore.get(path);
     }
 
     public String getImageUrl(String storageId) {
@@ -159,38 +126,15 @@ public class PhotoService {
         if (normal != null && normal.getPhotoUrl() != null) {
             return normal.getPhotoUrl();
         }
-
         CriticalRecord critical = criticalRepo.findById(storageId).orElse(null);
         if (critical != null && critical.getPhotoUrl() != null) {
             return critical.getPhotoUrl();
         }
-
         return null;
-    }
-
-    public byte[] getImageBytes(String assetId) {
-        return temporaryStore.get(assetId);
     }
 
     public void deleteTemporary(String assetId) {
         temporaryStore.remove(assetId);
-    }
-
-    private void uploadToMinio(String objectName, MultipartFile file) throws Exception {
-        boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
-        if (!exists) {
-            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
-        }
-
-        minioClient.putObject(
-            PutObjectArgs.builder()
-                .bucket(bucket)
-                .object(objectName)
-                .stream(file.getInputStream(), file.getSize(), -1)
-                .contentType(file.getContentType())
-                .build()
-        );
-        log.info("Uploaded to MinIO: {}/{}", bucket, objectName);
     }
 
     private String getExtension(MultipartFile file) {

@@ -11,6 +11,8 @@ import '../../../core/app_state.dart';
 import '../../../core/common_widgets/app_button.dart';
 import '../../../core/common_widgets/app_text_field.dart';
 import '../../images/data/image_selection_service.dart';
+import '../../images/data/image_upload_api_service.dart';
+import '../../images/data/local_image.dart';
 import '../../images/data/local_image_store.dart';
 import '../../images/presentation/image_source_picker.dart';
 
@@ -102,17 +104,49 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
           photoLocalPath: _photoLocalPath,
         );
 
-        await _recordRepository.createRecord(record);
-        debugPrint(
-          '[ADD NORMAL] localSaveSucceeded=true queueInsertSucceeded=true finalResult=success',
-        );
+        final recordId = await _recordRepository.createRecord(record);
+        debugPrint('[ADD NORMAL] recordCreated id=$recordId photoPath=$_photoLocalPath');
+
+        if (_photoLocalPath != null && recordId.isNotEmpty) {
+          try {
+            final imageService = HttpImageUploadApiService();
+            final file = File(_photoLocalPath!);
+            final exists = await file.exists();
+            if (!exists) {
+              debugPrint('[ADD NORMAL] ERROR: Photo file does not exist!');
+            } else {
+              final bytes = await file.readAsBytes();
+              final image = LocalImage(file: XFile(_photoLocalPath!), bytes: bytes);
+              final ref = await imageService.uploadNormalPhoto(recordId: recordId, image: image);
+              debugPrint('[ADD NORMAL] photoUploaded storageId=${ref.storageId}');
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Photo uploaded successfully!')),
+                );
+              }
+            }
+          } catch (e, st) {
+            debugPrint('[ADD NORMAL] photoUploadFailed: $e');
+            debugPrint('$st');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Photo upload failed: $e')),
+              );
+            }
+          }
+        } else {
+          debugPrint('[ADD NORMAL] SKIPPED photo upload: path=$_photoLocalPath recordId=$recordId');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('No photo selected. path=$_photoLocalPath id=$recordId')),
+            );
+          }
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                'Record saved locally. It will sync when connection returns.',
-              ),
+              content: Text('Record saved successfully.'),
             ),
           );
           Navigator.pop(context);

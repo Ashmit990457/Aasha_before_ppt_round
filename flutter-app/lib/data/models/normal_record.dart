@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 // ignore: constant_identifier_names
 enum NormalRecordStatus {
   // ignore: constant_identifier_names
@@ -59,11 +57,7 @@ class NormalRecord {
       'officerContact': officerContact,
       'status': status.name,
       'additionalDetails': additionalDetails,
-      'foundAt': Timestamp.fromDate(foundAt),
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+      'foundAt': foundAt.toIso8601String(),
     };
   }
 
@@ -73,6 +67,7 @@ class NormalRecord {
       name: map['name'] ?? '',
       age: map['age'] ?? 0,
       photoUrl: map['photoUrl'],
+      photoLocalPath: map['photoLocalPath'],
       campId: map['campId'] ?? '',
       campName: map['campName'] ?? '',
       officerUid: map['officerUid'] ?? '',
@@ -83,9 +78,20 @@ class NormalRecord {
         orElse: () => NormalRecordStatus.AT_CAMP,
       ),
       additionalDetails: map['additionalDetails'] ?? '',
-      foundAt: (map['foundAt'] as Timestamp).toDate(),
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
-      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
+      foundAt: _parseDate(map['foundAt']) ?? DateTime.now(),
+      createdAt: _parseDate(map['createdAt']),
+      updatedAt: _parseDate(map['updatedAt']),
     );
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    // Handle Firestore Timestamp
+    if (value is Map && value.containsKey('seconds')) {
+      return DateTime.fromMillisecondsSinceEpoch(value['seconds'] * 1000);
+    }
+    return null;
   }
 }

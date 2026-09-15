@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 // ignore: constant_identifier_names
 enum CriticalRecordStatus {
   // ignore: constant_identifier_names
@@ -85,11 +83,7 @@ class CriticalRecord {
       'locationAccuracy': locationAccuracy,
       'additionalDetails': additionalDetails,
       'status': status.name,
-      'foundAt': Timestamp.fromDate(foundAt),
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+      'foundAt': foundAt.toIso8601String(),
     };
   }
 
@@ -100,6 +94,8 @@ class CriticalRecord {
       age: map['age'] ?? 0,
       photoUrl: map['photoUrl'],
       clothingPhotoUrl: map['clothingPhotoUrl'],
+      photoLocalPath: map['photoLocalPath'],
+      clothingPhotoLocalPath: map['clothingPhotoLocalPath'],
       lastKnownClothing: map['lastKnownClothing'] ?? '',
       campId: map['campId'] ?? '',
       campName: map['campName'] ?? '',
@@ -107,17 +103,27 @@ class CriticalRecord {
       officerName: map['officerName'] ?? '',
       officerContact: map['officerContact'] ?? '',
       foundLocation: map['foundLocation'] ?? '',
-      foundLatitude: map['foundLatitude']?.toDouble(),
-      foundLongitude: map['foundLongitude']?.toDouble(),
-      locationAccuracy: map['locationAccuracy']?.toDouble(),
+      foundLatitude: (map['foundLatitude'] as num?)?.toDouble(),
+      foundLongitude: (map['foundLongitude'] as num?)?.toDouble(),
+      locationAccuracy: (map['locationAccuracy'] as num?)?.toDouble(),
       additionalDetails: map['additionalDetails'] ?? '',
       status: CriticalRecordStatus.values.firstWhere(
         (e) => e.name == map['status'],
         orElse: () => CriticalRecordStatus.CRITICAL,
       ),
-      foundAt: (map['foundAt'] as Timestamp).toDate(),
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
-      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
+      foundAt: _parseDate(map['foundAt']) ?? DateTime.now(),
+      createdAt: _parseDate(map['createdAt']),
+      updatedAt: _parseDate(map['updatedAt']),
     );
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    if (value is Map && value.containsKey('seconds')) {
+      return DateTime.fromMillisecondsSinceEpoch(value['seconds'] * 1000);
+    }
+    return null;
   }
 }

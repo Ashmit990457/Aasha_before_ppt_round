@@ -1,59 +1,81 @@
-import '../local/repositories/local_critical_record_repository.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../../core/config/api_config.dart';
 import '../models/critical_record.dart';
-import '../sync/sync_service.dart';
 
-/// Official-only repository. Normal-user features must continue using their Firestore path.
 class OfficialCriticalRecordRepository {
-  OfficialCriticalRecordRepository({SyncService? syncService})
-    : _sync = syncService ?? SyncService();
+  final String _baseUrl = ApiConfig.matchingBaseUrl;
 
-  final SyncService _sync;
-  LocalCriticalRecordRepository get _local => _sync.criticalRecords;
+  Future<void> createRecord(CriticalRecord record) async {
+    await http.post(
+      Uri.parse('$_baseUrl/api/critical-records'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': record.name,
+        'age': record.age,
+        'photoUrl': record.photoUrl,
+        'clothingPhotoUrl': record.clothingPhotoUrl,
+        'lastKnownClothing': record.lastKnownClothing,
+        'campId': record.campId,
+        'campName': record.campName,
+        'officerUid': record.officerUid,
+        'officerName': record.officerName,
+        'officerContact': record.officerContact,
+        'foundLocation': record.foundLocation,
+        'foundLatitude': record.foundLatitude,
+        'foundLongitude': record.foundLongitude,
+        'additionalDetails': record.additionalDetails,
+        'status': record.status.name,
+        'foundAt': record.foundAt?.toIso8601String(),
+      }),
+    ).timeout(const Duration(seconds: 15));
+  }
 
-  Future<void> createRecord(CriticalRecord record) =>
-      _sync.saveCritical(record, operationType: 'create');
-  Future<List<CriticalRecord>> getRecentRecords() => _local.getRecent();
-  Future<CriticalRecord?> getRecordById(String id) => _local.getById(id);
+  Future<List<CriticalRecord>> getRecentRecords() async {
+    final response = await http
+        .get(Uri.parse('$_baseUrl/api/critical-records/list'))
+        .timeout(const Duration(seconds: 15));
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => CriticalRecord.fromMap(e['id'], e)).toList();
+    }
+    return [];
+  }
+
+  Future<CriticalRecord?> getRecordById(String id) async {
+    final response = await http
+        .get(Uri.parse('$_baseUrl/api/critical-records/$id'))
+        .timeout(const Duration(seconds: 15));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return CriticalRecord.fromMap(data['id'], data);
+    }
+    return null;
+  }
+
   Future<List<CriticalRecord>> searchRecords({
     String? name,
     int? age,
     String? campId,
     CriticalRecordStatus? status,
-  }) =>
-      _local.search(name: name, age: age, campId: campId, status: status?.name);
+  }) async {
+    final records = await getRecentRecords();
+    return records.where((r) {
+      if (name != null && name.isNotEmpty && !r.name.toLowerCase().contains(name.toLowerCase())) return false;
+      if (age != null && r.age != age) return false;
+      if (campId != null && r.campId != campId) return false;
+      if (status != null && r.status != status) return false;
+      return true;
+    }).toList();
+  }
 
-  Future<void> updateStatus(
-    String recordId,
-    CriticalRecordStatus status,
-  ) async {
-    final current = await _local.getById(recordId);
-    if (current == null) throw StateError('Local record not found: $recordId');
-    await _sync.saveCritical(
-      CriticalRecord(
-        id: current.id,
-        name: current.name,
-        age: current.age,
-        photoUrl: current.photoUrl,
-        clothingPhotoUrl: current.clothingPhotoUrl,
-        photoLocalPath: current.photoLocalPath,
-        clothingPhotoLocalPath: current.clothingPhotoLocalPath,
-        lastKnownClothing: current.lastKnownClothing,
-        campId: current.campId,
-        campName: current.campName,
-        officerUid: current.officerUid,
-        officerName: current.officerName,
-        officerContact: current.officerContact,
-        foundLocation: current.foundLocation,
-        foundLatitude: current.foundLatitude,
-        foundLongitude: current.foundLongitude,
-        locationAccuracy: current.locationAccuracy,
-        additionalDetails: current.additionalDetails,
-        status: status,
-        foundAt: current.foundAt,
-        createdAt: current.createdAt,
-        updatedAt: DateTime.now(),
-      ),
-      operationType: 'update',
-    );
+  Future<void> updateStatus(String recordId, CriticalRecordStatus status) async {
+    await http.patch(
+      Uri.parse('$_baseUrl/api/critical-records/$recordId/status'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'status': status.name}),
+    ).timeout(const Duration(seconds: 15));
   }
 }

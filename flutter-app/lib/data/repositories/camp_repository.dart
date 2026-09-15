@@ -1,52 +1,75 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../../core/config/api_config.dart';
 import '../models/camp.dart';
-import '../sync/sync_service.dart';
 
-/// Official camp repository. Local state is written first; SyncService uploads it later.
 class CampRepository {
-  CampRepository({SyncService? syncService})
-    : _sync = syncService ?? SyncService.instance;
+  final String _baseUrl = ApiConfig.matchingBaseUrl;
 
-  final SyncService _sync;
+  Future<void> createCamp(Camp camp) async {
+    await http.post(
+      Uri.parse('$_baseUrl/api/camps'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': camp.name,
+        'locationName': camp.locationName,
+        'latitude': camp.latitude,
+        'longitude': camp.longitude,
+        'contactNumber': camp.contactNumber,
+        'officerName': camp.officerName,
+        'officerUid': camp.officerUid,
+        'active': camp.active,
+      }),
+    ).timeout(const Duration(seconds: 15));
+  }
 
-  Future<void> createCamp(Camp camp) =>
-      _sync.saveCamp(camp, operationType: 'create').then((_) {});
   Future<List<Camp>> getActiveCamps() async {
-    await _sync.ensureSession();
-    final cached = await _sync.camps.getActive();
-    if (cached.isNotEmpty) return cached;
+    final response = await http
+        .get(Uri.parse('$_baseUrl/api/camps/list/active'))
+        .timeout(const Duration(seconds: 15));
 
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('camps')
-          .where('active', isEqualTo: true)
-          .get();
-      for (final doc in snapshot.docs) {
-        await _sync.camps.insertOrUpdate(Camp.fromMap(doc.id, doc.data()));
-      }
-      final refreshed = await _sync.camps.getActive();
-      debugPrint(
-        '[CAMP_LOOKUP] local=${cached.length} remote=${refreshed.length}',
-      );
-      return refreshed;
-    } catch (error, stackTrace) {
-      debugPrint('[CAMP_LOOKUP] remote fallback failed: $error');
-      debugPrint('$stackTrace');
-      return cached;
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => Camp.fromMap(e['id'], e)).toList();
     }
+    return [];
   }
 
   Future<List<Camp>> getAllCamps() async {
-    await _sync.ensureSession();
-    return _sync.camps.getRecent(limit: 1000);
+    final response = await http
+        .get(Uri.parse('$_baseUrl/api/camps/list'))
+        .timeout(const Duration(seconds: 15));
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => Camp.fromMap(e['id'], e)).toList();
+    }
+    return [];
   }
 
   Future<Camp?> getCampById(String id) async {
-    await _sync.ensureSession();
-    return _sync.camps.getById(id);
+    final camps = await getAllCamps();
+    try {
+      return camps.firstWhere((c) => c.id == id);
+    } catch (_) {
+      return null;
+    }
   }
 
-  Future<void> updateCamp(Camp camp) =>
-      _sync.saveCamp(camp, operationType: 'update').then((_) {});
+  Future<void> updateCamp(Camp camp) async {
+    await http.put(
+      Uri.parse('$_baseUrl/api/camps/${camp.id}'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': camp.name,
+        'locationName': camp.locationName,
+        'latitude': camp.latitude,
+        'longitude': camp.longitude,
+        'contactNumber': camp.contactNumber,
+        'officerName': camp.officerName,
+        'officerUid': camp.officerUid,
+        'active': camp.active,
+      }),
+    ).timeout(const Duration(seconds: 15));
+  }
 }

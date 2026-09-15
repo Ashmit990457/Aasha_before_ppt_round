@@ -1,55 +1,82 @@
-import '../local/repositories/local_normal_record_repository.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../../core/config/api_config.dart';
 import '../models/normal_record.dart';
-import '../sync/sync_service.dart';
 
 class OfficialNormalRecordRepository {
-  OfficialNormalRecordRepository({SyncService? syncService})
-    : _sync = syncService ?? SyncService();
+  final String _baseUrl = ApiConfig.matchingBaseUrl;
 
-  final SyncService _sync;
-  LocalNormalRecordRepository get _local => _sync.normalRecords;
+  Future<String> createRecord(NormalRecord record) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/api/normal-records'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': record.name,
+        'age': record.age,
+        'photoUrl': record.photoUrl,
+        'campId': record.campId,
+        'campName': record.campName,
+        'officerUid': record.officerUid,
+        'officerName': record.officerName,
+        'officerContact': record.officerContact,
+        'status': record.status.name,
+        'additionalDetails': record.additionalDetails,
+        'foundAt': record.foundAt?.toIso8601String(),
+      }),
+    ).timeout(const Duration(seconds: 15));
 
-  Future<void> createRecord(NormalRecord record) async {
-    await _sync.saveNormal(record, operationType: 'create');
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['id'] ?? '';
+    }
+    return '';
   }
 
-  Future<List<NormalRecord>> getRecentRecords() => _local.getRecent();
+  Future<List<NormalRecord>> getRecentRecords() async {
+    final response = await http
+        .get(Uri.parse('$_baseUrl/api/normal-records/list'))
+        .timeout(const Duration(seconds: 15));
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => NormalRecord.fromMap(e['id'], e)).toList();
+    }
+    return [];
+  }
 
   Future<List<NormalRecord>> searchRecords({
     String? name,
     int? age,
     String? campId,
     NormalRecordStatus? status,
-  }) =>
-      _local.search(name: name, age: age, campId: campId, status: status?.name);
-
-  Future<NormalRecord?> getRecordById(String id) => _local.getById(id);
-
-  Future<void> updateStatus(String recordId, NormalRecordStatus status) async {
-    final current = await _local.getById(recordId);
-    if (current == null) throw StateError('Local record not found: $recordId');
-    await _sync.saveNormal(
-      _copyWithStatus(current, status),
-      operationType: 'update',
-    );
+  }) async {
+    final records = await getRecentRecords();
+    return records.where((r) {
+      if (name != null && name.isNotEmpty && !r.name.toLowerCase().contains(name.toLowerCase())) return false;
+      if (age != null && r.age != age) return false;
+      if (campId != null && r.campId != campId) return false;
+      if (status != null && r.status != status) return false;
+      return true;
+    }).toList();
   }
 
-  NormalRecord _copyWithStatus(NormalRecord r, NormalRecordStatus status) =>
-      NormalRecord(
-        id: r.id,
-        name: r.name,
-        age: r.age,
-        photoUrl: r.photoUrl,
-        photoLocalPath: r.photoLocalPath,
-        campId: r.campId,
-        campName: r.campName,
-        officerUid: r.officerUid,
-        officerName: r.officerName,
-        officerContact: r.officerContact,
-        status: status,
-        additionalDetails: r.additionalDetails,
-        foundAt: r.foundAt,
-        createdAt: r.createdAt,
-        updatedAt: DateTime.now(),
-      );
+  Future<NormalRecord?> getRecordById(String id) async {
+    final response = await http
+        .get(Uri.parse('$_baseUrl/api/normal-records/$id'))
+        .timeout(const Duration(seconds: 15));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return NormalRecord.fromMap(data['id'], data);
+    }
+    return null;
+  }
+
+  Future<void> updateStatus(String recordId, NormalRecordStatus status) async {
+    await http.patch(
+      Uri.parse('$_baseUrl/api/normal-records/$recordId/status'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'status': status.name}),
+    ).timeout(const Duration(seconds: 15));
+  }
 }

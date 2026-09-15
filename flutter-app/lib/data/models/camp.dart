@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class Camp {
   final String id;
   final String name;
@@ -41,9 +39,6 @@ class Camp {
       'officerUid': officerUid,
       'active': active,
       'locationAccuracy': locationAccuracy,
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
     };
   }
 
@@ -53,14 +48,24 @@ class Camp {
       name: map['name'] ?? '',
       locationName: map['locationName'] ?? '',
       address: map['address'] ?? '',
-      latitude: map['latitude']?.toDouble(),
-      longitude: map['longitude']?.toDouble(),
+      latitude: (map['latitude'] as num?)?.toDouble(),
+      longitude: (map['longitude'] as num?)?.toDouble(),
       contactNumber: map['contactNumber'] ?? '',
       officerName: map['officerName'] ?? '',
       officerUid: map['officerUid'] ?? '',
       active: map['active'] ?? true,
-      locationAccuracy: map['locationAccuracy']?.toDouble(),
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
+      locationAccuracy: (map['locationAccuracy'] as num?)?.toDouble(),
+      createdAt: _parseDate(map['createdAt']),
     );
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    if (value is Map && value.containsKey('seconds')) {
+      return DateTime.fromMillisecondsSinceEpoch(value['seconds'] * 1000);
+    }
+    return null;
   }
 }

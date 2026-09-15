@@ -62,7 +62,8 @@ public class SecurityConfig {
                 .requestMatchers("/login", "/register", "/logout").permitAll()
                 // Public API
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/stats", "/api/camps").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/stats", "/api/camps", "/api/camps/list/**", "/api/normal-records/**", "/api/critical-records/**").permitAll()
+                .requestMatchers("/api/normal-records/**", "/api/critical-records/**", "/api/camps/**").permitAll()
                 // Image upload API
                 .requestMatchers("/api/v1/images/**").permitAll()
                 // Match API

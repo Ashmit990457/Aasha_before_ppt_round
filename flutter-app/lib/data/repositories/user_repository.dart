@@ -1,31 +1,19 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../../core/config/api_config.dart';
 import '../models/app_user.dart';
 
 class UserRepository {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final String _baseUrl = ApiConfig.matchingBaseUrl;
 
   Future<void> createUserProfile(AppUser user) async {
-    await _firestore.collection('users').doc(user.id).set(user.toMap());
+    // User is already created during registration via /api/auth/register
+    // This method is kept for compatibility but is now a no-op
   }
 
   Future<AppUser?> getUserProfile(String uid) async {
-    final doc = await _firestore
-        .collection('users')
-        .doc(uid)
-        .get()
-        .timeout(const Duration(seconds: 15));
-    if (doc.exists && doc.data() != null) {
-      return AppUser.fromMap(doc.data()!);
-    }
-    return null;
-  }
-
-  Future<AppUser?> getCurrentUserProfile() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      return getUserProfile(user.uid);
-    }
+    // User profile is returned during login via JWT token
+    // This method is kept for compatibility
     return null;
   }
 }

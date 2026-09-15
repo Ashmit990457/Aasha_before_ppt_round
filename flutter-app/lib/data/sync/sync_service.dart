@@ -6,7 +6,6 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -444,8 +443,7 @@ class SyncService extends ChangeNotifier {
 
   Future<void> _ensureSession() async {
     if (ownerUid != null) return;
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) await startSession(uid);
+    // uid must be passed via startSession() from AppState
   }
 
   Future<void> ensureSession() => _ensureSession();

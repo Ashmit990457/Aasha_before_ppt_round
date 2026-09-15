@@ -16,6 +16,11 @@ class PhotoUrlHelper {
       return photoValue;
     }
     
+    // Relative URL from our backend (e.g. /api/v1/images/file/...)
+    if (photoValue.startsWith('/')) {
+      return 'http://192.168.1.33:8080$photoValue';
+    }
+    
     String? storageId;
     try {
       final decoded = json.decode(photoValue);
@@ -25,29 +30,12 @@ class PhotoUrlHelper {
         storageId = decoded;
       }
     } catch (_) {
-      // Not a JSON string, assume raw storageId
       storageId = photoValue;
     }
     
     if (storageId != null && storageId.isNotEmpty) {
-      debugPrint('[PHOTO HELPER] storageId detected: $storageId');
-      
-      // Cloudinary logic
       if (storageId.startsWith('cloudinary|')) {
-        final parts = storageId.split('|');
-        if (parts.length == 4) {
-          final deliveryType = parts[2]; // upload or authenticated
-
-          if (deliveryType == 'upload') {
-             final url = _getCloudinaryUrl(storageId);
-             debugPrint('[PHOTO HELPER] generated public URL: $url');
-             return url;
-          } else {
-             final url = _getCloudinaryUrl(storageId);
-             debugPrint('[PHOTO HELPER] generated authenticated URL: $url');
-             return url;
-          }
-        }
+        return _getCloudinaryUrl(storageId);
       }
     }
     

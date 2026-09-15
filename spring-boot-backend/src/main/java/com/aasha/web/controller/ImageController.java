@@ -91,11 +91,15 @@ public class ImageController {
 
     @GetMapping("/bytes/{assetId}")
     public ResponseEntity<byte[]> getImageBytes(@PathVariable String assetId) {
-        byte[] bytes = photoService.getImageBytes(assetId);
-        if (bytes != null) {
-            return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.IMAGE_JPEG_VALUE)
-                .body(bytes);
+        try {
+            byte[] bytes = photoService.getImageBytes(assetId);
+            if (bytes != null) {
+                return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.IMAGE_JPEG_VALUE)
+                    .body(bytes);
+            }
+        } catch (Exception e) {
+            log.error("Failed to get image bytes", e);
         }
         return ResponseEntity.notFound().build();
     }
@@ -104,5 +108,25 @@ public class ImageController {
     public ResponseEntity<?> deleteTemporary(@PathVariable String assetId) {
         photoService.deleteTemporary(assetId);
         return ResponseEntity.ok(Map.of("status", "deleted"));
+    }
+
+    @GetMapping("/file/{path:.+}")
+    public ResponseEntity<byte[]> serveFile(@PathVariable String path) {
+        try {
+            java.nio.file.Path filePath = java.nio.file.Paths.get("uploads", "photos", path);
+            java.nio.file.Path absolutePath = filePath.toAbsolutePath();
+            log.info("Serving file: {}", absolutePath);
+            if (java.nio.file.Files.exists(absolutePath)) {
+                byte[] bytes = java.nio.file.Files.readAllBytes(absolutePath);
+                String contentType = path.endsWith(".png") ? "image/png" : "image/jpeg";
+                return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_TYPE, contentType)
+                    .body(bytes);
+            }
+            log.warn("File not found: {}", absolutePath);
+        } catch (Exception e) {
+            log.error("Failed to serve file: {}", path, e);
+        }
+        return ResponseEntity.notFound().build();
     }
 }

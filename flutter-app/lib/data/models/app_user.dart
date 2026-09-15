@@ -1,52 +1,62 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 enum UserRole { user, official }
 
 class AppUser {
   final String id;
   final String name;
   final String email;
+  final String? phone;
   final UserRole role;
   final bool approved;
-  final DateTime? createdAt;
   final String? organization;
 
   AppUser({
     required this.id,
     required this.name,
     required this.email,
+    this.phone,
     required this.role,
     this.approved = true,
-    this.createdAt,
     this.organization,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'uid': id,
       'name': name,
       'email': email,
+      'phone': phone,
       'role': role.name,
       'approved': approved,
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
       'organization': organization,
     };
   }
 
   factory AppUser.fromMap(Map<String, dynamic> map) {
     return AppUser(
-      id: map['id'] ?? '',
+      id: map['uid'] ?? map['id'] ?? '',
       name: map['name'] ?? '',
       email: map['email'] ?? '',
+      phone: map['phone'],
       role: UserRole.values.firstWhere(
-        (e) => e.name == map['role'],
+        (e) => e.name == (map['role'] ?? 'user'),
         orElse: () => UserRole.user,
       ),
       approved: map['approved'] ?? false,
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
       organization: map['organization'],
+    );
+  }
+
+  factory AppUser.fromAuthResponse(Map<String, dynamic> data) {
+    return AppUser(
+      id: data['uid'] ?? '',
+      name: data['name'] ?? '',
+      email: data['email'] ?? '',
+      phone: data['phone'],
+      role: UserRole.values.firstWhere(
+        (e) => e.name == (data['role'] ?? 'user'),
+        orElse: () => UserRole.user,
+      ),
+      approved: data['approved'] ?? false,
     );
   }
 }
