@@ -161,6 +161,13 @@ class _OfficialDashboardScreenState extends State<OfficialDashboardScreen> {
                   'Pending Sync',
                   '/pending_sync',
                 ),
+                _buildActionCard(
+                  context,
+                  Icons.sos,
+                  'Emergency SOS',
+                  '/sos_requests',
+                  color: AppTheme.accentColor,
+                ),
               ],
             ),
           ],

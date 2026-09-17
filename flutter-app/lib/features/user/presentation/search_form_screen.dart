@@ -64,7 +64,7 @@ class _SearchFormScreenState extends State<SearchFormScreen> {
           requestId: requestId,
           image: _selectedImage!,
         );
-        photoReference = uploaded.storageId;
+        photoReference = uploaded.assetId;
       }
       if (!mounted) return;
       Navigator.pushReplacementNamed(

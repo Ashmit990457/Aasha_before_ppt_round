@@ -20,6 +20,7 @@ import '../models/critical_record.dart';
 import '../models/normal_record.dart';
 import '../../features/images/data/image_upload_api_service.dart';
 import '../../features/images/data/local_image.dart';
+import '../../features/emergency/data/models/user_sos.dart';
 
 enum SyncPhase { idle, offline, syncing, complete, failed }
 
@@ -31,17 +32,22 @@ class SyncService extends ChangeNotifier {
     FirebaseFirestore? firestore,
     Future<bool> Function()? internetCheck,
     ImageUploadApiService? imageUploadService,
+    Future<void> Function(Map<String, dynamic> payload)? sosSubmitter,
   }) : _database = database ?? LocalDatabase.instance.database,
        _firestoreOverride = firestore,
        _internetCheck = internetCheck,
-       _imageUploadService = imageUploadService ?? HttpImageUploadApiService();
+       _imageUploadService = imageUploadService ?? HttpImageUploadApiService(),
+       _sosSubmitter = sosSubmitter;
 
   final AppDatabase _database;
   final FirebaseFirestore? _firestoreOverride;
   final Future<bool> Function()? _internetCheck;
   final ImageUploadApiService _imageUploadService;
+  Future<void> Function(Map<String, dynamic> payload)? _sosSubmitter;
   late final SyncQueueRepository queue = SyncQueueRepository(_database);
 
+  /// LEGACY: Firebase Firestore dependency for background synchronization.
+  /// Production path now uses Spring Boot + MySQL + MinIO.
   FirebaseFirestore get _firestore =>
       _firestoreOverride ?? FirebaseFirestore.instance;
 
@@ -61,6 +67,12 @@ class SyncService extends ChangeNotifier {
   LocalCriticalRecordRepository get criticalRecords =>
       LocalCriticalRecordRepository(_database, ownerUid: ownerUid);
 
+  void configureSosSubmitter(
+    Future<void> Function(Map<String, dynamic> payload) submitter,
+  ) {
+    _sosSubmitter = submitter;
+  }
+
   Future<void> startSession(String uid) async {
     if (ownerUid == uid && _connectivitySubscription != null) {
       unawaited(syncAll());
@@ -69,18 +81,20 @@ class SyncService extends ChangeNotifier {
     await stopSession();
     ownerUid = uid;
     await _claimLegacyRows(uid);
-    
+
     // Immediate check and then listen for changes.
-    unawaited(isOnline().then((online) {
-      if (online) unawaited(syncAll());
-    }));
-    
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
-      (results) {
-        final isConnected = !results.contains(ConnectivityResult.none);
-        if (isConnected) unawaited(syncAll());
-      },
+    unawaited(
+      isOnline().then((online) {
+        if (online) unawaited(syncAll());
+      }),
     );
+
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      results,
+    ) {
+      final isConnected = !results.contains(ConnectivityResult.none);
+      if (isConnected) unawaited(syncAll());
+    });
     _syncPollTimer = Timer.periodic(
       const Duration(seconds: 15),
       (_) => unawaited(syncAll()),
@@ -110,13 +124,11 @@ class SyncService extends ChangeNotifier {
     try {
       final connectivity = await Connectivity().checkConnectivity();
       if (connectivity.contains(ConnectivityResult.none)) return false;
-      // Firestore is the actual network dependency. The request itself is
-      // attempted by syncAll and any failure is retained as a retryable queue
-      // item; avoid a separate Google endpoint that can fail on emulator IPv6.
-      await InternetAddress.lookup(
-        'firestore.googleapis.com',
-      ).timeout(const Duration(seconds: 5));
-      return true;
+      
+      // Perform a neutral DNS lookup to verify internet access
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 5));
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (_) {
       return false;
     }
@@ -324,8 +336,10 @@ class SyncService extends ChangeNotifier {
       debugPrint('$stackTrace');
       rethrow;
     }
-    
-    debugPrint('[ADD NORMAL] queueInsertSucceeded=true onlineCheckStarted=true');
+
+    debugPrint(
+      '[ADD NORMAL] queueInsertSucceeded=true onlineCheckStarted=true',
+    );
     // Implementation of "Online-First": try immediate sync if connected.
     if (await isOnline()) {
       debugPrint('[ADD NORMAL] online=true immediateSyncStarted=true');
@@ -339,7 +353,7 @@ class SyncService extends ChangeNotifier {
     } else {
       debugPrint('[ADD NORMAL] online=false backgroundSyncScheduled=true');
     }
-    
+
     return queueId;
   }
 
@@ -376,8 +390,10 @@ class SyncService extends ChangeNotifier {
       debugPrint('$stackTrace');
       rethrow;
     }
-    
-    debugPrint('[ADD CRITICAL] queueInsertSucceeded=true onlineCheckStarted=true');
+
+    debugPrint(
+      '[ADD CRITICAL] queueInsertSucceeded=true onlineCheckStarted=true',
+    );
     if (await isOnline()) {
       debugPrint('[ADD CRITICAL] online=true immediateSyncStarted=true');
       try {
@@ -389,7 +405,7 @@ class SyncService extends ChangeNotifier {
     } else {
       debugPrint('[ADD CRITICAL] online=false backgroundSyncScheduled=true');
     }
-    
+
     return queueId;
   }
 
@@ -404,28 +420,62 @@ class SyncService extends ChangeNotifier {
       operationType: operationType,
       payload: _campPayload(value),
     );
-    
+
     if (await isOnline()) {
       try {
         await _syncSingleItem(queueId);
       } catch (_) {}
     }
-    
+
     return queueId;
+  }
+
+  Future<bool> saveSos(UserSos sos) async {
+    final queueId = await queue.enqueue(
+      ownerUid: sos.userId ?? ownerUid,
+      entityType: 'user_sos',
+      entityId: sos.id,
+      operationType: 'create',
+      payload: {
+        'id': sos.id,
+        'userId': sos.userId,
+        'latitude': sos.latitude,
+        'longitude': sos.longitude,
+        'accuracy': sos.accuracy,
+        'message': sos.message,
+        'createdAt': sos.createdAt.toIso8601String(),
+        'status': sos.status.name,
+      },
+    );
+
+    if (await isOnline()) {
+      try {
+        await _syncSingleItem(queueId);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+    return false;
   }
 
   Future<void> _syncSingleItem(int queueId) async {
     final entry = await queue.getById(queueId);
     if (entry == null || entry.syncStatus == 'completed') return;
-    
+
     await queue.markSyncing(entry.id);
     try {
       final payload = Map<String, dynamic>.from(entry.payload);
       await _uploadPendingImages(entry, payload);
-      await _firestore
-          .collection(_collectionFor(entry.entityType))
-          .doc(entry.entityId)
-          .set(_toFirestoreMap(payload), SetOptions(merge: true));
+      final sosSubmitter = _sosSubmitter;
+      if (entry.entityType == 'user_sos' && sosSubmitter != null) {
+        await sosSubmitter(payload);
+      } else {
+        await _firestore
+            .collection(_collectionFor(entry.entityType))
+            .doc(entry.entityId)
+            .set(_toFirestoreMap(payload), SetOptions(merge: true));
+      }
       await queue.markCompleted(entry.id);
     } catch (error) {
       await queue.incrementRetry(entry.id);
@@ -438,6 +488,7 @@ class SyncService extends ChangeNotifier {
     'camp' => 'camps',
     'normal_record' => 'normal_records',
     'critical_record' => 'critical_records',
+    'user_sos' => 'user_sos',
     _ => throw ArgumentError('Unknown sync entity: $type'),
   };
 

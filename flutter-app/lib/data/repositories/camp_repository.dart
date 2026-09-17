@@ -25,7 +25,7 @@ class CampRepository {
 
   Future<List<Camp>> getActiveCamps() async {
     final response = await http
-        .get(Uri.parse('$_baseUrl/api/camps/list/active'))
+        .get(Uri.parse('$_baseUrl/api/camps'))
         .timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 200) {
@@ -37,7 +37,7 @@ class CampRepository {
 
   Future<List<Camp>> getAllCamps() async {
     final response = await http
-        .get(Uri.parse('$_baseUrl/api/camps/list'))
+        .get(Uri.parse('$_baseUrl/api/camps'))
         .timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 200) {

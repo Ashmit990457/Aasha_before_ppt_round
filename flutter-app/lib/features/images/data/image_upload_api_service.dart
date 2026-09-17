@@ -100,19 +100,10 @@ class HttpImageUploadApiService implements ImageUploadApiService {
 
   @override
   Future<String?> getImageUrl(String storageId) async {
-    try {
-      final uri = Uri.parse('$_baseUrl/api/v1/images/url').replace(
-        queryParameters: {'storage_id': storageId},
-      );
-      final response = await _client.get(uri).timeout(_timeout);
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        return decoded['url'] as String?;
-      }
-    } catch (e) {
-      debugPrint('[IMAGE API] failed to resolve URL: $e');
-    }
-    return null;
+    // storageId is the relative path (e.g. "normal/id/photo.jpg")
+    if (storageId.startsWith('/')) return '$_baseUrl$storageId';
+    if (storageId.startsWith('http')) return storageId;
+    return '$_baseUrl/api/v1/images/file/$storageId';
   }
 
   Future<ImageStorageReference> _upload(

@@ -2,11 +2,11 @@ package com.aasha.web.config;
 
 import com.aasha.web.entity.AppUser;
 import com.aasha.web.repository.UserRepository;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -15,13 +15,19 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
+
+    @Bean
+    public RestTemplate restTemplate() { return new RestTemplate(); }
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UserRepository userRepo;
@@ -63,6 +69,8 @@ public class SecurityConfig {
                 // Public API
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/stats", "/api/camps", "/api/camps/list/**", "/api/normal-records/**", "/api/critical-records/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/alerts/active").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/sos").authenticated()
                 .requestMatchers("/api/normal-records/**", "/api/critical-records/**", "/api/camps/**").permitAll()
                 // Image upload API
                 .requestMatchers("/api/v1/images/**").permitAll()

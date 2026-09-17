@@ -6,8 +6,8 @@ from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 class MatchRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    name: str = Field(..., min_length=1)
-    age: int = Field(..., ge=0, le=120)
+    name: str = Field(default="")
+    age: Optional[int] = Field(default=None, ge=0, le=120)
     last_known_location: Optional[str] = Field(
         default=None,
         validation_alias=AliasChoices("last_known_location", "lastKnownLocation"),
@@ -17,6 +17,22 @@ class MatchRequest(BaseModel):
         validation_alias=AliasChoices("additional_details", "additionalDetails"),
     )
     photo: Optional[str] = None
+    candidates: list["CandidateInput"] = Field(default_factory=list)
+
+
+class CandidateInput(BaseModel):
+    record_id: str
+    record_type: str
+    name: str
+    age: Optional[int] = None
+    camp_name: str = ""
+    status: str = ""
+    officer_name: str = ""
+    officer_contact: str = ""
+    photo_url: Optional[str] = None
+    last_known_clothing: Optional[str] = None
+    found_location: Optional[str] = None
+    additional_details: Optional[str] = None
 
 
 class MatchMoreRequest(BaseModel):

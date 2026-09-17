@@ -25,7 +25,10 @@ def initialize_firestore_client() -> Any:
 
 
 class FirestoreRecordDataSource:
-    """Server-side Firestore reader using an already initialized client."""
+    """Server-side Firestore reader using an already initialized client.
+
+    DEPRECATED: Production matching now uses candidates provided in the request.
+    """
 
     def __init__(self, firestore_client: Any = None):
         if firestore_client is None:

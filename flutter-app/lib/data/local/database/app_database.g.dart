@@ -3062,6 +3062,757 @@ class CriticalRecordsCompanion extends UpdateCompanion<CriticalRecord> {
   }
 }
 
+class $EmergencyAlertsTable extends EmergencyAlerts
+    with TableInfo<$EmergencyAlertsTable, EmergencyAlert> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EmergencyAlertsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _messageMeta = const VerificationMeta(
+    'message',
+  );
+  @override
+  late final GeneratedColumn<String> message = GeneratedColumn<String>(
+    'message',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _severityMeta = const VerificationMeta(
+    'severity',
+  );
+  @override
+  late final GeneratedColumn<String> severity = GeneratedColumn<String>(
+    'severity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _districtMeta = const VerificationMeta(
+    'district',
+  );
+  @override
+  late final GeneratedColumn<String> district = GeneratedColumn<String>(
+    'district',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _stateMeta = const VerificationMeta('state');
+  @override
+  late final GeneratedColumn<String> state = GeneratedColumn<String>(
+    'state',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _latitudeMeta = const VerificationMeta(
+    'latitude',
+  );
+  @override
+  late final GeneratedColumn<double> latitude = GeneratedColumn<double>(
+    'latitude',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _longitudeMeta = const VerificationMeta(
+    'longitude',
+  );
+  @override
+  late final GeneratedColumn<double> longitude = GeneratedColumn<double>(
+    'longitude',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _radiusKmMeta = const VerificationMeta(
+    'radiusKm',
+  );
+  @override
+  late final GeneratedColumn<double> radiusKm = GeneratedColumn<double>(
+    'radius_km',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _activeMeta = const VerificationMeta('active');
+  @override
+  late final GeneratedColumn<bool> active = GeneratedColumn<bool>(
+    'active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cachedAtMeta = const VerificationMeta(
+    'cachedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> cachedAt = GeneratedColumn<DateTime>(
+    'cached_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    message,
+    type,
+    severity,
+    district,
+    state,
+    latitude,
+    longitude,
+    radiusKm,
+    active,
+    createdAt,
+    cachedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'emergency_alerts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EmergencyAlert> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('message')) {
+      context.handle(
+        _messageMeta,
+        message.isAcceptableOrUnknown(data['message']!, _messageMeta),
+      );
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('severity')) {
+      context.handle(
+        _severityMeta,
+        severity.isAcceptableOrUnknown(data['severity']!, _severityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_severityMeta);
+    }
+    if (data.containsKey('district')) {
+      context.handle(
+        _districtMeta,
+        district.isAcceptableOrUnknown(data['district']!, _districtMeta),
+      );
+    }
+    if (data.containsKey('state')) {
+      context.handle(
+        _stateMeta,
+        state.isAcceptableOrUnknown(data['state']!, _stateMeta),
+      );
+    }
+    if (data.containsKey('latitude')) {
+      context.handle(
+        _latitudeMeta,
+        latitude.isAcceptableOrUnknown(data['latitude']!, _latitudeMeta),
+      );
+    }
+    if (data.containsKey('longitude')) {
+      context.handle(
+        _longitudeMeta,
+        longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta),
+      );
+    }
+    if (data.containsKey('radius_km')) {
+      context.handle(
+        _radiusKmMeta,
+        radiusKm.isAcceptableOrUnknown(data['radius_km']!, _radiusKmMeta),
+      );
+    }
+    if (data.containsKey('active')) {
+      context.handle(
+        _activeMeta,
+        active.isAcceptableOrUnknown(data['active']!, _activeMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('cached_at')) {
+      context.handle(
+        _cachedAtMeta,
+        cachedAt.isAcceptableOrUnknown(data['cached_at']!, _cachedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cachedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EmergencyAlert map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EmergencyAlert(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      message: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message'],
+      ),
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      severity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}severity'],
+      )!,
+      district: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}district'],
+      ),
+      state: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state'],
+      ),
+      latitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}latitude'],
+      ),
+      longitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}longitude'],
+      ),
+      radiusKm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}radius_km'],
+      ),
+      active: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}active'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      cachedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}cached_at'],
+      )!,
+    );
+  }
+
+  @override
+  $EmergencyAlertsTable createAlias(String alias) {
+    return $EmergencyAlertsTable(attachedDatabase, alias);
+  }
+}
+
+class EmergencyAlert extends DataClass implements Insertable<EmergencyAlert> {
+  final String id;
+  final String title;
+  final String? message;
+  final String type;
+  final String severity;
+  final String? district;
+  final String? state;
+  final double? latitude;
+  final double? longitude;
+  final double? radiusKm;
+  final bool active;
+  final DateTime createdAt;
+  final DateTime cachedAt;
+  const EmergencyAlert({
+    required this.id,
+    required this.title,
+    this.message,
+    required this.type,
+    required this.severity,
+    this.district,
+    this.state,
+    this.latitude,
+    this.longitude,
+    this.radiusKm,
+    required this.active,
+    required this.createdAt,
+    required this.cachedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || message != null) {
+      map['message'] = Variable<String>(message);
+    }
+    map['type'] = Variable<String>(type);
+    map['severity'] = Variable<String>(severity);
+    if (!nullToAbsent || district != null) {
+      map['district'] = Variable<String>(district);
+    }
+    if (!nullToAbsent || state != null) {
+      map['state'] = Variable<String>(state);
+    }
+    if (!nullToAbsent || latitude != null) {
+      map['latitude'] = Variable<double>(latitude);
+    }
+    if (!nullToAbsent || longitude != null) {
+      map['longitude'] = Variable<double>(longitude);
+    }
+    if (!nullToAbsent || radiusKm != null) {
+      map['radius_km'] = Variable<double>(radiusKm);
+    }
+    map['active'] = Variable<bool>(active);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['cached_at'] = Variable<DateTime>(cachedAt);
+    return map;
+  }
+
+  EmergencyAlertsCompanion toCompanion(bool nullToAbsent) {
+    return EmergencyAlertsCompanion(
+      id: Value(id),
+      title: Value(title),
+      message: message == null && nullToAbsent
+          ? const Value.absent()
+          : Value(message),
+      type: Value(type),
+      severity: Value(severity),
+      district: district == null && nullToAbsent
+          ? const Value.absent()
+          : Value(district),
+      state: state == null && nullToAbsent
+          ? const Value.absent()
+          : Value(state),
+      latitude: latitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(latitude),
+      longitude: longitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(longitude),
+      radiusKm: radiusKm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(radiusKm),
+      active: Value(active),
+      createdAt: Value(createdAt),
+      cachedAt: Value(cachedAt),
+    );
+  }
+
+  factory EmergencyAlert.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EmergencyAlert(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      message: serializer.fromJson<String?>(json['message']),
+      type: serializer.fromJson<String>(json['type']),
+      severity: serializer.fromJson<String>(json['severity']),
+      district: serializer.fromJson<String?>(json['district']),
+      state: serializer.fromJson<String?>(json['state']),
+      latitude: serializer.fromJson<double?>(json['latitude']),
+      longitude: serializer.fromJson<double?>(json['longitude']),
+      radiusKm: serializer.fromJson<double?>(json['radiusKm']),
+      active: serializer.fromJson<bool>(json['active']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      cachedAt: serializer.fromJson<DateTime>(json['cachedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'message': serializer.toJson<String?>(message),
+      'type': serializer.toJson<String>(type),
+      'severity': serializer.toJson<String>(severity),
+      'district': serializer.toJson<String?>(district),
+      'state': serializer.toJson<String?>(state),
+      'latitude': serializer.toJson<double?>(latitude),
+      'longitude': serializer.toJson<double?>(longitude),
+      'radiusKm': serializer.toJson<double?>(radiusKm),
+      'active': serializer.toJson<bool>(active),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'cachedAt': serializer.toJson<DateTime>(cachedAt),
+    };
+  }
+
+  EmergencyAlert copyWith({
+    String? id,
+    String? title,
+    Value<String?> message = const Value.absent(),
+    String? type,
+    String? severity,
+    Value<String?> district = const Value.absent(),
+    Value<String?> state = const Value.absent(),
+    Value<double?> latitude = const Value.absent(),
+    Value<double?> longitude = const Value.absent(),
+    Value<double?> radiusKm = const Value.absent(),
+    bool? active,
+    DateTime? createdAt,
+    DateTime? cachedAt,
+  }) => EmergencyAlert(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    message: message.present ? message.value : this.message,
+    type: type ?? this.type,
+    severity: severity ?? this.severity,
+    district: district.present ? district.value : this.district,
+    state: state.present ? state.value : this.state,
+    latitude: latitude.present ? latitude.value : this.latitude,
+    longitude: longitude.present ? longitude.value : this.longitude,
+    radiusKm: radiusKm.present ? radiusKm.value : this.radiusKm,
+    active: active ?? this.active,
+    createdAt: createdAt ?? this.createdAt,
+    cachedAt: cachedAt ?? this.cachedAt,
+  );
+  EmergencyAlert copyWithCompanion(EmergencyAlertsCompanion data) {
+    return EmergencyAlert(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      message: data.message.present ? data.message.value : this.message,
+      type: data.type.present ? data.type.value : this.type,
+      severity: data.severity.present ? data.severity.value : this.severity,
+      district: data.district.present ? data.district.value : this.district,
+      state: data.state.present ? data.state.value : this.state,
+      latitude: data.latitude.present ? data.latitude.value : this.latitude,
+      longitude: data.longitude.present ? data.longitude.value : this.longitude,
+      radiusKm: data.radiusKm.present ? data.radiusKm.value : this.radiusKm,
+      active: data.active.present ? data.active.value : this.active,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      cachedAt: data.cachedAt.present ? data.cachedAt.value : this.cachedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmergencyAlert(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('message: $message, ')
+          ..write('type: $type, ')
+          ..write('severity: $severity, ')
+          ..write('district: $district, ')
+          ..write('state: $state, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('radiusKm: $radiusKm, ')
+          ..write('active: $active, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('cachedAt: $cachedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    message,
+    type,
+    severity,
+    district,
+    state,
+    latitude,
+    longitude,
+    radiusKm,
+    active,
+    createdAt,
+    cachedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EmergencyAlert &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.message == this.message &&
+          other.type == this.type &&
+          other.severity == this.severity &&
+          other.district == this.district &&
+          other.state == this.state &&
+          other.latitude == this.latitude &&
+          other.longitude == this.longitude &&
+          other.radiusKm == this.radiusKm &&
+          other.active == this.active &&
+          other.createdAt == this.createdAt &&
+          other.cachedAt == this.cachedAt);
+}
+
+class EmergencyAlertsCompanion extends UpdateCompanion<EmergencyAlert> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String?> message;
+  final Value<String> type;
+  final Value<String> severity;
+  final Value<String?> district;
+  final Value<String?> state;
+  final Value<double?> latitude;
+  final Value<double?> longitude;
+  final Value<double?> radiusKm;
+  final Value<bool> active;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> cachedAt;
+  final Value<int> rowid;
+  const EmergencyAlertsCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.message = const Value.absent(),
+    this.type = const Value.absent(),
+    this.severity = const Value.absent(),
+    this.district = const Value.absent(),
+    this.state = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
+    this.radiusKm = const Value.absent(),
+    this.active = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.cachedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EmergencyAlertsCompanion.insert({
+    required String id,
+    required String title,
+    this.message = const Value.absent(),
+    required String type,
+    required String severity,
+    this.district = const Value.absent(),
+    this.state = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
+    this.radiusKm = const Value.absent(),
+    this.active = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime cachedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       type = Value(type),
+       severity = Value(severity),
+       createdAt = Value(createdAt),
+       cachedAt = Value(cachedAt);
+  static Insertable<EmergencyAlert> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? message,
+    Expression<String>? type,
+    Expression<String>? severity,
+    Expression<String>? district,
+    Expression<String>? state,
+    Expression<double>? latitude,
+    Expression<double>? longitude,
+    Expression<double>? radiusKm,
+    Expression<bool>? active,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? cachedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (message != null) 'message': message,
+      if (type != null) 'type': type,
+      if (severity != null) 'severity': severity,
+      if (district != null) 'district': district,
+      if (state != null) 'state': state,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (radiusKm != null) 'radius_km': radiusKm,
+      if (active != null) 'active': active,
+      if (createdAt != null) 'created_at': createdAt,
+      if (cachedAt != null) 'cached_at': cachedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EmergencyAlertsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String?>? message,
+    Value<String>? type,
+    Value<String>? severity,
+    Value<String?>? district,
+    Value<String?>? state,
+    Value<double?>? latitude,
+    Value<double?>? longitude,
+    Value<double?>? radiusKm,
+    Value<bool>? active,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? cachedAt,
+    Value<int>? rowid,
+  }) {
+    return EmergencyAlertsCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      message: message ?? this.message,
+      type: type ?? this.type,
+      severity: severity ?? this.severity,
+      district: district ?? this.district,
+      state: state ?? this.state,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      radiusKm: radiusKm ?? this.radiusKm,
+      active: active ?? this.active,
+      createdAt: createdAt ?? this.createdAt,
+      cachedAt: cachedAt ?? this.cachedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (message.present) {
+      map['message'] = Variable<String>(message.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (severity.present) {
+      map['severity'] = Variable<String>(severity.value);
+    }
+    if (district.present) {
+      map['district'] = Variable<String>(district.value);
+    }
+    if (state.present) {
+      map['state'] = Variable<String>(state.value);
+    }
+    if (latitude.present) {
+      map['latitude'] = Variable<double>(latitude.value);
+    }
+    if (longitude.present) {
+      map['longitude'] = Variable<double>(longitude.value);
+    }
+    if (radiusKm.present) {
+      map['radius_km'] = Variable<double>(radiusKm.value);
+    }
+    if (active.present) {
+      map['active'] = Variable<bool>(active.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (cachedAt.present) {
+      map['cached_at'] = Variable<DateTime>(cachedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmergencyAlertsCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('message: $message, ')
+          ..write('type: $type, ')
+          ..write('severity: $severity, ')
+          ..write('district: $district, ')
+          ..write('state: $state, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('radiusKm: $radiusKm, ')
+          ..write('active: $active, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('cachedAt: $cachedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SyncQueueTable extends SyncQueue
     with TableInfo<$SyncQueueTable, SyncQueueData> {
   @override
@@ -3687,6 +4438,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CriticalRecordsTable criticalRecords = $CriticalRecordsTable(
     this,
   );
+  late final $EmergencyAlertsTable emergencyAlerts = $EmergencyAlertsTable(
+    this,
+  );
   late final $SyncQueueTable syncQueue = $SyncQueueTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -3696,6 +4450,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     camps,
     normalRecords,
     criticalRecords,
+    emergencyAlerts,
     syncQueue,
   ];
 }
@@ -5065,6 +5820,364 @@ typedef $$CriticalRecordsTableProcessedTableManager =
       CriticalRecord,
       PrefetchHooks Function()
     >;
+typedef $$EmergencyAlertsTableCreateCompanionBuilder =
+    EmergencyAlertsCompanion Function({
+      required String id,
+      required String title,
+      Value<String?> message,
+      required String type,
+      required String severity,
+      Value<String?> district,
+      Value<String?> state,
+      Value<double?> latitude,
+      Value<double?> longitude,
+      Value<double?> radiusKm,
+      Value<bool> active,
+      required DateTime createdAt,
+      required DateTime cachedAt,
+      Value<int> rowid,
+    });
+typedef $$EmergencyAlertsTableUpdateCompanionBuilder =
+    EmergencyAlertsCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<String?> message,
+      Value<String> type,
+      Value<String> severity,
+      Value<String?> district,
+      Value<String?> state,
+      Value<double?> latitude,
+      Value<double?> longitude,
+      Value<double?> radiusKm,
+      Value<bool> active,
+      Value<DateTime> createdAt,
+      Value<DateTime> cachedAt,
+      Value<int> rowid,
+    });
+
+class $$EmergencyAlertsTableFilterComposer
+    extends Composer<_$AppDatabase, $EmergencyAlertsTable> {
+  $$EmergencyAlertsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get message => $composableBuilder(
+    column: $table.message,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get severity => $composableBuilder(
+    column: $table.severity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get district => $composableBuilder(
+    column: $table.district,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get latitude => $composableBuilder(
+    column: $table.latitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get longitude => $composableBuilder(
+    column: $table.longitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get radiusKm => $composableBuilder(
+    column: $table.radiusKm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get active => $composableBuilder(
+    column: $table.active,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get cachedAt => $composableBuilder(
+    column: $table.cachedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EmergencyAlertsTableOrderingComposer
+    extends Composer<_$AppDatabase, $EmergencyAlertsTable> {
+  $$EmergencyAlertsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get message => $composableBuilder(
+    column: $table.message,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get severity => $composableBuilder(
+    column: $table.severity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get district => $composableBuilder(
+    column: $table.district,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get latitude => $composableBuilder(
+    column: $table.latitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get longitude => $composableBuilder(
+    column: $table.longitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get radiusKm => $composableBuilder(
+    column: $table.radiusKm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get active => $composableBuilder(
+    column: $table.active,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get cachedAt => $composableBuilder(
+    column: $table.cachedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EmergencyAlertsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EmergencyAlertsTable> {
+  $$EmergencyAlertsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get message =>
+      $composableBuilder(column: $table.message, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get severity =>
+      $composableBuilder(column: $table.severity, builder: (column) => column);
+
+  GeneratedColumn<String> get district =>
+      $composableBuilder(column: $table.district, builder: (column) => column);
+
+  GeneratedColumn<String> get state =>
+      $composableBuilder(column: $table.state, builder: (column) => column);
+
+  GeneratedColumn<double> get latitude =>
+      $composableBuilder(column: $table.latitude, builder: (column) => column);
+
+  GeneratedColumn<double> get longitude =>
+      $composableBuilder(column: $table.longitude, builder: (column) => column);
+
+  GeneratedColumn<double> get radiusKm =>
+      $composableBuilder(column: $table.radiusKm, builder: (column) => column);
+
+  GeneratedColumn<bool> get active =>
+      $composableBuilder(column: $table.active, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get cachedAt =>
+      $composableBuilder(column: $table.cachedAt, builder: (column) => column);
+}
+
+class $$EmergencyAlertsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EmergencyAlertsTable,
+          EmergencyAlert,
+          $$EmergencyAlertsTableFilterComposer,
+          $$EmergencyAlertsTableOrderingComposer,
+          $$EmergencyAlertsTableAnnotationComposer,
+          $$EmergencyAlertsTableCreateCompanionBuilder,
+          $$EmergencyAlertsTableUpdateCompanionBuilder,
+          (
+            EmergencyAlert,
+            BaseReferences<
+              _$AppDatabase,
+              $EmergencyAlertsTable,
+              EmergencyAlert
+            >,
+          ),
+          EmergencyAlert,
+          PrefetchHooks Function()
+        > {
+  $$EmergencyAlertsTableTableManager(
+    _$AppDatabase db,
+    $EmergencyAlertsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EmergencyAlertsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EmergencyAlertsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EmergencyAlertsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> message = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> severity = const Value.absent(),
+                Value<String?> district = const Value.absent(),
+                Value<String?> state = const Value.absent(),
+                Value<double?> latitude = const Value.absent(),
+                Value<double?> longitude = const Value.absent(),
+                Value<double?> radiusKm = const Value.absent(),
+                Value<bool> active = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> cachedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EmergencyAlertsCompanion(
+                id: id,
+                title: title,
+                message: message,
+                type: type,
+                severity: severity,
+                district: district,
+                state: state,
+                latitude: latitude,
+                longitude: longitude,
+                radiusKm: radiusKm,
+                active: active,
+                createdAt: createdAt,
+                cachedAt: cachedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                Value<String?> message = const Value.absent(),
+                required String type,
+                required String severity,
+                Value<String?> district = const Value.absent(),
+                Value<String?> state = const Value.absent(),
+                Value<double?> latitude = const Value.absent(),
+                Value<double?> longitude = const Value.absent(),
+                Value<double?> radiusKm = const Value.absent(),
+                Value<bool> active = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime cachedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => EmergencyAlertsCompanion.insert(
+                id: id,
+                title: title,
+                message: message,
+                type: type,
+                severity: severity,
+                district: district,
+                state: state,
+                latitude: latitude,
+                longitude: longitude,
+                radiusKm: radiusKm,
+                active: active,
+                createdAt: createdAt,
+                cachedAt: cachedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EmergencyAlertsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EmergencyAlertsTable,
+      EmergencyAlert,
+      $$EmergencyAlertsTableFilterComposer,
+      $$EmergencyAlertsTableOrderingComposer,
+      $$EmergencyAlertsTableAnnotationComposer,
+      $$EmergencyAlertsTableCreateCompanionBuilder,
+      $$EmergencyAlertsTableUpdateCompanionBuilder,
+      (
+        EmergencyAlert,
+        BaseReferences<_$AppDatabase, $EmergencyAlertsTable, EmergencyAlert>,
+      ),
+      EmergencyAlert,
+      PrefetchHooks Function()
+    >;
 typedef $$SyncQueueTableCreateCompanionBuilder =
     SyncQueueCompanion Function({
       Value<int> id,
@@ -5374,6 +6487,8 @@ class $AppDatabaseManager {
       $$NormalRecordsTableTableManager(_db, _db.normalRecords);
   $$CriticalRecordsTableTableManager get criticalRecords =>
       $$CriticalRecordsTableTableManager(_db, _db.criticalRecords);
+  $$EmergencyAlertsTableTableManager get emergencyAlerts =>
+      $$EmergencyAlertsTableTableManager(_db, _db.emergencyAlerts);
   $$SyncQueueTableTableManager get syncQueue =>
       $$SyncQueueTableTableManager(_db, _db.syncQueue);
 }

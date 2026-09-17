@@ -32,7 +32,11 @@ class UserHomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    const Icon(Icons.search_outlined, size: 64, color: Colors.grey),
+                    const Icon(
+                      Icons.search_outlined,
+                      size: 64,
+                      color: Colors.grey,
+                    ),
                     const SizedBox(height: 16),
                     const Text(
                       'Provide the details you know. Our system will compare them with verified records from disaster-response officials.',
@@ -42,7 +46,51 @@ class UserHomeScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     AppButton(
                       text: 'Start Search',
-                      onPressed: () => Navigator.pushNamed(context, '/search_form'),
+                      onPressed: () =>
+                          Navigator.pushNamed(context, '/search_form'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            Card(
+              color: const Color(0xFFFFF4F1),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.shield_outlined, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text(
+                          'Emergency',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('Safety status, alerts, safe camps, and SOS.'),
+                    const SizedBox(height: 14),
+                    FilledButton.icon(
+                      onPressed: () =>
+                          Navigator.pushNamed(context, '/emergency_center'),
+                      icon: const Icon(Icons.shield_outlined),
+                      label: const Text('Emergency Center'),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.center,
+                      child: TextButton.icon(
+                        onPressed: () => Navigator.pushNamed(context, '/sos'),
+                        icon: const Icon(Icons.sos),
+                        label: const Text('SEND SOS'),
+                      ),
                     ),
                   ],
                 ),
@@ -55,8 +103,14 @@ class UserHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildStep(Icons.edit, 'Fill in the missing person details.'),
-            _buildStep(Icons.auto_awesome, 'Our AI system analyzes verified records.'),
-            _buildStep(Icons.contact_phone, 'Connect with officials if a match is found.'),
+            _buildStep(
+              Icons.auto_awesome,
+              'Our AI system analyzes verified records.',
+            ),
+            _buildStep(
+              Icons.contact_phone,
+              'Connect with officials if a match is found.',
+            ),
           ],
         ),
       ),

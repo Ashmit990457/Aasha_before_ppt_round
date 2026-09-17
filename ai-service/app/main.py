@@ -3,9 +3,8 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 
-from .data_sources import DemoRecordDataSource, FirestoreRecordDataSource, initialize_firestore_client
-from .models import MatchMoreRequest, MatchRequest, MatchResponse, MatchResult
-from .scoring import MatchScoringService, ScoredCandidate
+from .models import CandidateInput, MatchMoreRequest, MatchRequest, MatchResponse, MatchResult
+from .scoring import MatchScoringService, ScoredCandidate, CandidateRecord
 
 app = FastAPI(title="DisasterConnect AI Matching Engine")
 
@@ -15,6 +14,17 @@ _face_similarity = None
 _image_storage = None
 
 PAGE_SIZE = 3
+MAX_SESSIONS = 100
+_ranked_sessions: dict[str, list[ScoredCandidate]] = {}
+
+
+def _clean_sessions():
+    """Simple LRU-like cleanup to prevent memory leaks."""
+    if len(_ranked_sessions) > MAX_SESSIONS:
+        # Remove oldest 20% of sessions
+        keys_to_remove = list(_ranked_sessions.keys())[:20]
+        for key in keys_to_remove:
+            _ranked_sessions.pop(key, None)
 
 
 def _get_services():
@@ -173,24 +183,56 @@ def _page(request_id: str, ranked: list[ScoredCandidate], offset: int) -> MatchR
 @app.post("/api/v1/match", response_model=MatchResponse)
 @app.post("/match", response_model=MatchResponse, include_in_schema=False)
 def match_missing_person(request: MatchRequest):
+    _clean_sessions()
     query = request.model_dump(exclude_none=True)
-
-    try:
-        client = initialize_firestore_client()
-        data_source = FirestoreRecordDataSource(client)
-        candidates = data_source.fetch_recent(100)
-    except Exception:
-        data_source = DemoRecordDataSource()
-        candidates = data_source.fetch_recent(100)
-
+    candidates = [_candidate_from_input(candidate) for candidate in request.candidates]
     ranked = _rank_candidates(query, candidates)
-    return _page("initial", ranked, 0)
+    request_id = __import__("uuid").uuid4().hex
+    _ranked_sessions[request_id] = ranked
+    return _page(request_id, ranked, 0)
 
 
 @app.post("/api/v1/match/more", response_model=MatchResponse)
 @app.post("/match/more", response_model=MatchResponse, include_in_schema=False)
 def match_more(request: MatchMoreRequest):
-    raise HTTPException(status_code=501, detail="Pagination not implemented in demo")
+    try:
+        offset = int(request.page_token)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="Invalid page token") from error
+    ranked = _ranked_sessions.get(request.request_id)
+    if ranked is None:
+        raise HTTPException(status_code=404, detail="Matching request not found")
+    return _page(request.request_id, ranked, offset)
+
+
+def _candidate_from_input(candidate: CandidateInput) -> CandidateRecord:
+    import json
+
+    # Extract image_storage_id if available in photo_url JSON
+    image_storage_id = None
+    if candidate.photo_url:
+        try:
+            decoded = json.loads(candidate.photo_url)
+            if isinstance(decoded, dict):
+                image_storage_id = decoded.get("storageId") or decoded.get("storage_id")
+        except (TypeError, ValueError):
+            pass
+
+    return CandidateRecord(
+        record_id=candidate.record_id,
+        record_type=candidate.record_type,
+        name=candidate.name,
+        age=candidate.age or 0,
+        camp_name=candidate.camp_name,
+        status=candidate.status,
+        officer_name=candidate.officer_name,
+        officer_contact=candidate.officer_contact,
+        photo_url=candidate.photo_url,
+        image_storage_id=image_storage_id,
+        last_known_clothing=candidate.last_known_clothing,
+        found_location=candidate.found_location,
+        additional_details=candidate.additional_details,
+    )
 
 
 @app.get("/api/v1/health")

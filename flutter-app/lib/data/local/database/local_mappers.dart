@@ -2,7 +2,46 @@ import 'package:drift/drift.dart';
 import '../../models/camp.dart' as camp_model;
 import '../../models/critical_record.dart' as critical_model;
 import '../../models/normal_record.dart' as normal_model;
+import '../../../features/emergency/data/models/emergency_alert.dart';
 import 'app_database.dart' as local;
+
+EmergencyAlert emergencyAlertFromLocal(local.EmergencyAlert row) =>
+    EmergencyAlert(
+      id: row.id,
+      title: row.title,
+      message: row.message ?? '',
+      disasterType: row.type,
+      severity: EmergencySeverity.values.firstWhere(
+        (value) => value.name == row.severity,
+        orElse: () => EmergencySeverity.moderate,
+      ),
+      district: row.district,
+      state: row.state,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      radiusKm: row.radiusKm,
+      createdAt: row.createdAt,
+      active: row.active,
+    );
+
+local.EmergencyAlertsCompanion emergencyAlertToLocal(
+  EmergencyAlert value, {
+  DateTime? cachedAt,
+}) => local.EmergencyAlertsCompanion.insert(
+  id: value.id,
+  title: value.title,
+  message: Value(value.message),
+  type: value.disasterType,
+  severity: value.severity.name,
+  district: Value(value.district),
+  state: Value(value.state),
+  latitude: Value(value.latitude),
+  longitude: Value(value.longitude),
+  radiusKm: Value(value.radiusKm),
+  active: Value(value.active),
+  createdAt: value.createdAt,
+  cachedAt: cachedAt ?? DateTime.now(),
+);
 
 camp_model.Camp campFromLocal(local.Camp row) => camp_model.Camp(
   id: row.id,

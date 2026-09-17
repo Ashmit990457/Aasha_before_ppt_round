@@ -77,6 +77,25 @@ class CriticalRecords extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+class EmergencyAlerts extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text()();
+  TextColumn get message => text().nullable()();
+  TextColumn get type => text()();
+  TextColumn get severity => text()();
+  TextColumn get district => text().nullable()();
+  TextColumn get state => text().nullable()();
+  RealColumn get latitude => real().nullable()();
+  RealColumn get longitude => real().nullable()();
+  RealColumn get radiusKm => real().nullable()();
+  BoolColumn get active => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get cachedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 class SyncQueue extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get ownerUid => text().nullable()();
@@ -90,12 +109,14 @@ class SyncQueue extends Table {
   TextColumn get syncStatus => text()();
 }
 
-@DriftDatabase(tables: [Camps, NormalRecords, CriticalRecords, SyncQueue])
+@DriftDatabase(
+  tables: [Camps, NormalRecords, CriticalRecords, EmergencyAlerts, SyncQueue],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -114,6 +135,9 @@ class AppDatabase extends _$AppDatabase {
           criticalRecords,
           criticalRecords.clothingPhotoLocalPath,
         );
+      }
+      if (from < 4) {
+        await m.createTable(emergencyAlerts);
       }
     },
   );

@@ -109,8 +109,12 @@ class MatchScoringService:
 
         components = [
             (name_score, self.config.name_weight),
-            (age_score, self.config.age_weight),
         ]
+
+        # Only include age in scoring if both query and candidate have it
+        if query.get("age") is not None and candidate.age > 0:
+            components.append((age_score, self.config.age_weight))
+
         if query.get("last_known_location") and (
             candidate.found_location or candidate.camp_name
         ):
@@ -155,9 +159,12 @@ class MatchScoringService:
         """Add visual similarities without recomputing text embeddings."""
         components = [
             (metadata_score.name_score, self.config.name_weight),
-            (metadata_score.age_score, self.config.age_weight),
         ]
         candidate = metadata_score.candidate
+
+        if query.get("age") is not None and candidate.age > 0:
+            components.append((metadata_score.age_score, self.config.age_weight))
+
         if query.get("last_known_location") and (
             candidate.found_location or candidate.camp_name
         ):

@@ -36,7 +36,15 @@ import 'features/official/presentation/add_critical_record_screen.dart';
 import 'features/official/presentation/search_records_screen.dart';
 import 'features/official/presentation/recent_records_screen.dart';
 import 'features/official/presentation/pending_sync_screen.dart';
+import 'features/official/presentation/sos_requests_screen.dart';
 import 'features/profile/presentation/profile_screen.dart';
+import 'features/emergency/presentation/emergency_alerts_screen.dart';
+import 'features/emergency/presentation/emergency_alert_detail_screen.dart';
+import 'features/emergency/data/models/emergency_alert.dart';
+import 'features/emergency/data/models/disaster_zone.dart';
+import 'features/emergency/presentation/safety_map_screen.dart';
+import 'features/emergency/presentation/sos_screen.dart';
+import 'features/emergency/presentation/emergency_center_screen.dart';
 
 class DisasterConnectApp extends StatefulWidget {
   const DisasterConnectApp({super.key});
@@ -99,6 +107,7 @@ class _DisasterConnectAppState extends State<DisasterConnectApp> {
                 return NormalRecordDetailsScreen(record: record);
               },
               '/pending_sync': (context) => const PendingSyncScreen(),
+              '/sos_requests': (context) => const SosRequestsScreen(),
               '/manage_camps': (context) => const ManageCampsScreen(),
               '/add_camp': (context) => const AddCampScreen(),
               '/edit_camp': (context) {
@@ -110,6 +119,19 @@ class _DisasterConnectAppState extends State<DisasterConnectApp> {
                 return CampDetailsScreen(camp: camp);
               },
               '/profile': (context) => const ProfileScreen(),
+              '/emergency_alerts': (context) => const EmergencyAlertsScreen(),
+              '/emergency_alert_detail': (context) =>
+                  EmergencyAlertDetailScreen(
+                    alert:
+                        ModalRoute.of(context)!.settings.arguments
+                            as EmergencyAlert,
+                  ),
+              '/safety_map': (context) => SafetyMapScreen(
+                initialDisaster:
+                    ModalRoute.of(context)?.settings.arguments as DisasterZone?,
+              ),
+              '/sos': (context) => const SosScreen(),
+              '/emergency_center': (context) => const EmergencyCenterScreen(),
             },
             // Logic to redirect based on auth state
             builder: (context, child) {

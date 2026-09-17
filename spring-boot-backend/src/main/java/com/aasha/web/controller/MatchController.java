@@ -1,9 +1,10 @@
 package com.aasha.web.controller;
 
-import com.aasha.web.entity.CriticalRecord;
-import com.aasha.web.entity.NormalRecord;
-import com.aasha.web.repository.CriticalRecordRepository;
-import com.aasha.web.repository.NormalRecordRepository;
+import com.aasha.web.dto.MatchAiRequest;
+import com.aasha.web.dto.MatchAiResponse;
+import com.aasha.web.service.AiMatchingClient;
+import com.aasha.web.service.CandidateRetrievalService;
+import com.aasha.web.service.PhotoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,128 +14,64 @@ import java.util.*;
 @RequestMapping("/api/v1/match")
 public class MatchController {
 
-    private final NormalRecordRepository normalRepo;
-    private final CriticalRecordRepository criticalRepo;
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MatchController.class);
+    private final CandidateRetrievalService candidates;
+    private final AiMatchingClient ai;
+    private final PhotoService photoService;
 
-    public MatchController(NormalRecordRepository normalRepo, CriticalRecordRepository criticalRepo) {
-        this.normalRepo = normalRepo;
-        this.criticalRepo = criticalRepo;
+    public MatchController(CandidateRetrievalService candidates, AiMatchingClient ai, PhotoService photoService) {
+        this.candidates = candidates;
+        this.ai = ai;
+        this.photoService = photoService;
     }
 
     @PostMapping
-    public ResponseEntity<?> findMatches(@RequestBody Map<String, Object> body) {
-        String name = (String) body.getOrDefault("name", "");
-        Integer age = null;
-        Object ageObj = body.get("age");
-        if (ageObj instanceof Number) {
-            age = ((Number) ageObj).intValue();
+    public ResponseEntity<MatchAiResponse> findMatches(@RequestBody Map<String, Object> body) {
+        String name = text(body.get("name"));
+        Integer age = number(body.get("age"));
+        String location = text(body.get("lastKnownLocation"));
+        if (location.isEmpty()) location = text(body.get("last_known_location"));
+        String details = text(body.get("additionalDetails"));
+        if (details.isEmpty()) details = text(body.get("additional_details"));
+        String photo = text(body.get("photo"));
+
+        try {
+            String photoData = null;
+            if (!photo.isEmpty()) {
+                try {
+                    byte[] image = photoService.getImageBytes(photo);
+                    if (image != null) photoData = Base64.getEncoder().encodeToString(image);
+                } catch (Exception e) {
+                    log.error("Failed to read temporary photo: {}", photo, e);
+                }
+            }
+
+            var candidatesList = candidates.retrieve(name, age, location, details);
+            log.info("Retrieved {} candidates for AI ranking", candidatesList.size());
+
+            MatchAiResponse response = ai.rank(new MatchAiRequest(
+                    name, age, location.isEmpty() ? null : location,
+                    details.isEmpty() ? null : details,
+                    photoData,
+                    candidatesList));
+
+            return ResponseEntity.ok(response);
+        } finally {
+            if (!photo.isEmpty()) {
+                try {
+                    photoService.deleteTemporary(photo);
+                } catch (Exception e) {
+                    log.warn("Failed to delete temporary photo: {}", photo);
+                }
+            }
         }
-
-        List<Map<String, Object>> results = new ArrayList<>();
-
-        // Search normal records
-        List<NormalRecord> normalRecords;
-        if (!name.isEmpty() && age != null) {
-            normalRecords = normalRepo.findByNameAndAge(name, age);
-        } else if (!name.isEmpty()) {
-            normalRecords = normalRepo.findByNameContaining(name);
-        } else {
-            normalRecords = normalRepo.findTop20ByOrderByCreatedAtDesc();
-        }
-
-        for (NormalRecord r : normalRecords) {
-            Map<String, Object> result = new HashMap<>();
-            result.put("recordType", "normal");
-            result.put("recordId", r.getId());
-            result.put("name", r.getName());
-            result.put("age", r.getAge());
-            result.put("photoUrl", r.getPhotoUrl());
-            result.put("campName", r.getCampName());
-            result.put("officerName", r.getOfficerName());
-            result.put("officerContact", r.getOfficerContact());
-            result.put("status", r.getStatus());
-            result.put("matchConfidence", calculateConfidence(name, age, r.getName(), r.getAge()));
-            result.put("matchLabel", getMatchLabel(calculateConfidence(name, age, r.getName(), r.getAge())));
-            results.add(result);
-        }
-
-        // Search critical records
-        List<CriticalRecord> criticalRecords;
-        if (!name.isEmpty() && age != null) {
-            criticalRecords = criticalRepo.findByNameAndAge(name, age);
-        } else if (!name.isEmpty()) {
-            criticalRecords = criticalRepo.findByNameContaining(name);
-        } else {
-            criticalRecords = criticalRepo.findTop20ByOrderByCreatedAtDesc();
-        }
-
-        for (CriticalRecord r : criticalRecords) {
-            Map<String, Object> result = new HashMap<>();
-            result.put("recordType", "critical");
-            result.put("recordId", r.getId());
-            result.put("name", r.getName());
-            result.put("age", r.getAge());
-            result.put("lastKnownClothing", r.getLastKnownClothing());
-            result.put("campName", r.getCampName());
-            result.put("officerName", r.getOfficerName());
-            result.put("officerContact", r.getOfficerContact());
-            result.put("matchConfidence", calculateConfidence(name, age, r.getName(), r.getAge()));
-            result.put("matchLabel", getMatchLabel(calculateConfidence(name, age, r.getName(), r.getAge())));
-            results.add(result);
-        }
-
-        // Sort by confidence
-        results.sort((a, b) -> Double.compare(
-                (double) b.get("matchConfidence"),
-                (double) a.get("matchConfidence")
-        ));
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("results", results);
-        response.put("hasMore", false);
-        response.put("requestId", UUID.randomUUID().toString());
-
-        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/more")
-    public ResponseEntity<?> getMoreMatches(@RequestBody Map<String, Object> body) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("results", List.of());
-        response.put("hasMore", false);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<MatchAiResponse> getMoreMatches(@RequestBody Map<String, Object> body) {
+        return ResponseEntity.ok(ai.more(body));
     }
 
-    private double calculateConfidence(String searchName, Integer searchAge, String dbName, Integer dbAge) {
-        double score = 0.0;
-
-        if (searchName != null && !searchName.isEmpty() && dbName != null) {
-            String s = searchName.toLowerCase().trim();
-            String d = dbName.toLowerCase().trim();
-            if (d.equals(s)) {
-                score += 0.6;
-            } else if (d.contains(s) || s.contains(d)) {
-                score += 0.4;
-            } else if (d.startsWith(s) || s.startsWith(d)) {
-                score += 0.3;
-            } else {
-                score += 0.1;
-            }
-        }
-
-        if (searchAge != null && dbAge != null) {
-            int diff = Math.abs(searchAge - dbAge);
-            if (diff == 0) score += 0.3;
-            else if (diff <= 2) score += 0.2;
-            else if (diff <= 5) score += 0.1;
-        }
-
-        return Math.min(score, 1.0);
-    }
-
-    private String getMatchLabel(double confidence) {
-        if (confidence >= 0.8) return "High Match";
-        if (confidence >= 0.5) return "Possible Match";
-        return "Low Match";
-    }
+    private String text(Object value) { return value == null ? "" : value.toString().trim(); }
+    private Integer number(Object value) { return value instanceof Number ? ((Number) value).intValue() : null; }
 }
