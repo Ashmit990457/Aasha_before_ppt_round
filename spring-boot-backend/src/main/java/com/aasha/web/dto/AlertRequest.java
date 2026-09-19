@@ -14,8 +14,8 @@ public class AlertRequest {
     private String state;
     private Double latitude;
     private Double longitude;
-    private Double radiusKm;
     private Boolean active = true;
+    private String incidentId;
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -33,8 +33,8 @@ public class AlertRequest {
     public void setLatitude(Double latitude) { this.latitude = latitude; }
     public Double getLongitude() { return longitude; }
     public void setLongitude(Double longitude) { this.longitude = longitude; }
-    public Double getRadiusKm() { return radiusKm; }
-    public void setRadiusKm(Double radiusKm) { this.radiusKm = radiusKm; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public String getIncidentId() { return incidentId; }
+    public void setIncidentId(String value) { incidentId = value; }
 }

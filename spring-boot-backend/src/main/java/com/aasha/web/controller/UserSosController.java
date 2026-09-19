@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -17,6 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/sos")
 public class UserSosController {
+    private static final Logger log = LoggerFactory.getLogger(UserSosController.class);
     private final UserSosService service;
 
     public UserSosController(UserSosService service) { this.service = service; }
@@ -27,20 +30,30 @@ public class UserSosController {
             @Valid @RequestBody SosRequest request,
             Authentication authentication
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.create(request, authentication.getName()));
+        var response = service.create(request, authentication.getName());
+        log.info("[SOS-OFFICIAL-DEBUG] submitted_sos_id={} db_insert=SUCCESS", response.id());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
     @PreAuthorize("hasRole('OFFICIAL')")
-    public ResponseEntity<List<SosResponse>> all(@RequestParam(required = false) String status) {
-        return ResponseEntity.ok(service.all(status));
+    public ResponseEntity<List<SosResponse>> all(
+            @RequestParam(required = false) String status,
+            Authentication authentication
+    ) {
+        var responses = status == null ? service.all() : service.all(status);
+        log.info("[SOS-OFFICIAL-DEBUG] official_user=authenticated official_role={} status_filter={} official_query_count={} returned_sos_ids={}",
+                authentication.getAuthorities(), status, responses.size(),
+                responses.stream().map(SosResponse::id).toList());
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('OFFICIAL')")
     public ResponseEntity<SosResponse> get(@PathVariable String id) {
-        return ResponseEntity.ok(service.get(id));
+        var response = service.get(id);
+        log.info("[SOS-OFFICIAL-DEBUG] official_detail_sos_id={} status={}", id, response.status());
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{id}/status")

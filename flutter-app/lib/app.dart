@@ -45,6 +45,8 @@ import 'features/emergency/data/models/disaster_zone.dart';
 import 'features/emergency/presentation/safety_map_screen.dart';
 import 'features/emergency/presentation/sos_screen.dart';
 import 'features/emergency/presentation/emergency_center_screen.dart';
+import 'features/emergency/presentation/government_alerts_management_screen.dart';
+import 'features/emergency/data/push_notification_service.dart';
 
 class DisasterConnectApp extends StatefulWidget {
   const DisasterConnectApp({super.key});
@@ -55,6 +57,26 @@ class DisasterConnectApp extends StatefulWidget {
 
 class _DisasterConnectAppState extends State<DisasterConnectApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  final _pushNotifications = PushNotificationService.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _pushNotifications.alertOpened.addListener(_openAlertFromNotification);
+  }
+
+  @override
+  void dispose() {
+    _pushNotifications.alertOpened.removeListener(_openAlertFromNotification);
+    super.dispose();
+  }
+
+  void _openAlertFromNotification() {
+    final alertId = _pushNotifications.alertOpened.value;
+    if (alertId == null) return;
+    _pushNotifications.alertOpened.value = null;
+    _navigatorKey.currentState?.pushNamed('/emergency_alerts');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +154,8 @@ class _DisasterConnectAppState extends State<DisasterConnectApp> {
               ),
               '/sos': (context) => const SosScreen(),
               '/emergency_center': (context) => const EmergencyCenterScreen(),
+              '/government_alerts_management': (context) =>
+                  const GovernmentAlertsManagementScreen(),
             },
             // Logic to redirect based on auth state
             builder: (context, child) {

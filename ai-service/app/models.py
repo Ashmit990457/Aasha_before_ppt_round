@@ -6,6 +6,9 @@ from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 class MatchRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
+    incident_id: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("incident_id", "incidentId")
+    )
     name: str = Field(default="")
     age: Optional[int] = Field(default=None, ge=0, le=120)
     last_known_location: Optional[str] = Field(
@@ -21,6 +24,9 @@ class MatchRequest(BaseModel):
 
 
 class CandidateInput(BaseModel):
+    incident_id: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("incident_id", "incidentId")
+    )
     record_id: str
     record_type: str
     name: str
@@ -30,6 +36,10 @@ class CandidateInput(BaseModel):
     officer_name: str = ""
     officer_contact: str = ""
     photo_url: Optional[str] = None
+    image_storage_id: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("image_storage_id", "imageStorageId"),
+    )
     last_known_clothing: Optional[str] = None
     found_location: Optional[str] = None
     additional_details: Optional[str] = None
@@ -45,6 +55,7 @@ class MatchMoreRequest(BaseModel):
 
 
 class MatchResult(BaseModel):
+    incident_id: Optional[str] = Field(default=None, serialization_alias="incident_id")
     record_id: str
     name: str
     age: int
@@ -65,3 +76,6 @@ class MatchResponse(BaseModel):
     results: list[MatchResult]
     has_more: bool
     next_page_token: Optional[str] = None
+    incident_id: str = Field(
+        ..., validation_alias=AliasChoices("incident_id", "incidentId")
+    )

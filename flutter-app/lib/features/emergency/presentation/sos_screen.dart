@@ -119,6 +119,8 @@ class _SosScreenState extends State<SosScreen> {
                   ? 'Need immediate help?'
                   : submission.state == SosDeliveryState.submitted
                   ? 'SOS SENT'
+                  : submission.state == SosDeliveryState.failed
+                  ? 'SOS NOT SENT'
                   : 'SOS REQUEST SAVED',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),

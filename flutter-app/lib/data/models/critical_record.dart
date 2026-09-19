@@ -12,6 +12,7 @@ enum CriticalRecordStatus {
 
 class CriticalRecord {
   final String id;
+  final String? incidentId;
   final String name;
   final int age;
 
@@ -42,6 +43,7 @@ class CriticalRecord {
 
   CriticalRecord({
     required this.id,
+    this.incidentId,
     required this.name,
     required this.age,
     this.photoUrl,
@@ -67,6 +69,7 @@ class CriticalRecord {
 
   Map<String, dynamic> toMap() {
     return {
+      'incidentId': incidentId,
       'name': name,
       'age': age,
       'photoUrl': photoUrl,
@@ -90,6 +93,7 @@ class CriticalRecord {
   factory CriticalRecord.fromMap(String id, Map<String, dynamic> map) {
     return CriticalRecord(
       id: id,
+      incidentId: map['incidentId'] ?? map['incident_id'],
       name: map['name'] ?? '',
       age: map['age'] ?? 0,
       photoUrl: map['photoUrl'],

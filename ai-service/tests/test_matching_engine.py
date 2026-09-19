@@ -145,6 +145,7 @@ def _candidate(record_id, record_type="normal", image_storage_id=None):
         additional_details="blue shirt",
         image_storage_id=image_storage_id,
         photo_url="normal-photo-url" if record_type == "normal" else None,
+        incident_id="test-incident",
     )
 
 
@@ -321,16 +322,17 @@ def test_clip_is_limited_to_the_centralized_metadata_shortlist(monkeypatch):
 
 def test_pagination_uses_the_existing_ranked_order_and_top_three_page_size():
     scoring = MatchScoringService(TextSimilarityService(encoder=FakeEncoder()))
-    query = {"name": "Rahul Sharma", "age": 24}
+    query = {"name": "Rahul Sharma", "age": 24, "incident_id": "test-incident"}
     ranked = [
         scoring.score(query, _candidate(f"candidate-{index}"))
         for index in range(5)
     ]
 
-    first = _page("session-1", ranked, 0)
-    second = _page("session-1", ranked, 3)
+    first = _page("session-1", ranked, 0, "test-incident")
+    second = _page("session-1", ranked, 3, "test-incident")
 
     assert first.request_id == second.request_id == "session-1"
+    assert first.incident_id == "test-incident"
     assert len(first.results) == 3
     assert first.has_more is True
     assert first.next_page_token == "3"

@@ -3,10 +3,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 import '../local/database/app_database.dart'
@@ -21,6 +21,7 @@ import '../models/normal_record.dart';
 import '../../features/images/data/image_upload_api_service.dart';
 import '../../features/images/data/local_image.dart';
 import '../../features/emergency/data/models/user_sos.dart';
+import '../../core/config/api_config.dart';
 
 enum SyncPhase { idle, offline, syncing, complete, failed }
 
@@ -29,27 +30,19 @@ class SyncService extends ChangeNotifier {
 
   SyncService({
     AppDatabase? database,
-    FirebaseFirestore? firestore,
     Future<bool> Function()? internetCheck,
     ImageUploadApiService? imageUploadService,
     Future<void> Function(Map<String, dynamic> payload)? sosSubmitter,
   }) : _database = database ?? LocalDatabase.instance.database,
-       _firestoreOverride = firestore,
        _internetCheck = internetCheck,
        _imageUploadService = imageUploadService ?? HttpImageUploadApiService(),
        _sosSubmitter = sosSubmitter;
 
   final AppDatabase _database;
-  final FirebaseFirestore? _firestoreOverride;
   final Future<bool> Function()? _internetCheck;
   final ImageUploadApiService _imageUploadService;
   Future<void> Function(Map<String, dynamic> payload)? _sosSubmitter;
   late final SyncQueueRepository queue = SyncQueueRepository(_database);
-
-  /// LEGACY: Firebase Firestore dependency for background synchronization.
-  /// Production path now uses Spring Boot + MySQL + MinIO.
-  FirebaseFirestore get _firestore =>
-      _firestoreOverride ?? FirebaseFirestore.instance;
 
   SyncPhase phase = SyncPhase.idle;
   bool? online;
@@ -124,11 +117,14 @@ class SyncService extends ChangeNotifier {
     try {
       final connectivity = await Connectivity().checkConnectivity();
       if (connectivity.contains(ConnectivityResult.none)) return false;
-      
-      // Perform a neutral DNS lookup to verify internet access
-      final result = await InternetAddress.lookup('google.com')
+
+      // Verify the configured Asha backend, not a separate public DNS host.
+      // A phone may have LAN access to Spring Boot while public DNS/internet
+      // access is unavailable.
+      final response = await http
+          .get(Uri.parse('${ApiConfig.matchingBaseUrl}/health'))
           .timeout(const Duration(seconds: 5));
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+      return response.statusCode >= 200 && response.statusCode < 400;
     } catch (_) {
       return false;
     }
@@ -144,7 +140,7 @@ class SyncService extends ChangeNotifier {
     notifyListeners();
     try {
       // Push local changes first. A pull failure must never prevent a locally
-      // saved record from reaching Firestore.
+      // saved record from reaching Spring Boot.
       await processPendingQueue();
       await pullLatestData();
       await _enforceRetention();
@@ -163,33 +159,33 @@ class SyncService extends ChangeNotifier {
   Future<void> pullLatestData() async {
     final uid = ownerUid;
     if (uid == null) return;
-    final campSnapshot = await _firestore
-        .collection('camps')
-        .where('active', isEqualTo: true)
-        .get();
-    for (final doc in campSnapshot.docs) {
-      if (!await queue.hasUnsynced('camp', doc.id, ownerUid: uid)) {
-        await camps.insertOrUpdate(Camp.fromMap(doc.id, doc.data()));
+    final campResponse = await http.get(Uri.parse('${ApiConfig.matchingBaseUrl}/api/camps/list/active'));
+    if (campResponse.statusCode != 200) throw StateError('Camp sync failed (${campResponse.statusCode})');
+    for (final value in (jsonDecode(campResponse.body) as List)) {
+      final data = Map<String, dynamic>.from(value as Map);
+      final id = data['id'] as String;
+      if (!await queue.hasUnsynced('camp', id, ownerUid: uid)) {
+        await camps.insertOrUpdate(Camp.fromMap(id, data));
       }
     }
 
-    final normalSnapshot = await _firestore.collection('normal_records').get();
-    for (final doc in normalSnapshot.docs.take(100)) {
-      if (!await queue.hasUnsynced('normal_record', doc.id, ownerUid: uid)) {
-        await normalRecords.insertOrUpdate(
-          NormalRecord.fromMap(doc.id, doc.data()),
-        );
+    final normalResponse = await http.get(Uri.parse('${ApiConfig.matchingBaseUrl}/api/normal-records/list'));
+    if (normalResponse.statusCode != 200) throw StateError('Normal record sync failed (${normalResponse.statusCode})');
+    for (final value in (jsonDecode(normalResponse.body) as List).take(100)) {
+      final data = Map<String, dynamic>.from(value as Map);
+      final id = data['id'] as String;
+      if (!await queue.hasUnsynced('normal_record', id, ownerUid: uid)) {
+        await normalRecords.insertOrUpdate(NormalRecord.fromMap(id, data));
       }
     }
 
-    final criticalSnapshot = await _firestore
-        .collection('critical_records')
-        .get();
-    for (final doc in criticalSnapshot.docs.take(100)) {
-      if (!await queue.hasUnsynced('critical_record', doc.id, ownerUid: uid)) {
-        await criticalRecords.insertOrUpdate(
-          CriticalRecord.fromMap(doc.id, doc.data()),
-        );
+    final criticalResponse = await http.get(Uri.parse('${ApiConfig.matchingBaseUrl}/api/critical-records/list'));
+    if (criticalResponse.statusCode != 200) throw StateError('Critical record sync failed (${criticalResponse.statusCode})');
+    for (final value in (jsonDecode(criticalResponse.body) as List).take(100)) {
+      final data = Map<String, dynamic>.from(value as Map);
+      final id = data['id'] as String;
+      if (!await queue.hasUnsynced('critical_record', id, ownerUid: uid)) {
+        await criticalRecords.insertOrUpdate(CriticalRecord.fromMap(id, data));
       }
     }
   }
@@ -213,10 +209,11 @@ class SyncService extends ChangeNotifier {
       try {
         final payload = Map<String, dynamic>.from(entry.payload);
         await _uploadPendingImages(entry, payload);
-        await _firestore
-            .collection(_collectionFor(entry.entityType))
-            .doc(entry.entityId)
-            .set(_toFirestoreMap(payload), SetOptions(merge: true));
+        if (entry.entityType == 'user_sos' && _sosSubmitter != null) {
+          await _sosSubmitter!(payload);
+        } else {
+          await _syncEntity(entry.entityType, entry.entityId, payload);
+        }
         await queue.markCompleted(entry.id);
       } catch (error) {
         await queue.incrementRetry(entry.id);
@@ -430,7 +427,7 @@ class SyncService extends ChangeNotifier {
     return queueId;
   }
 
-  Future<bool> saveSos(UserSos sos) async {
+  Future<bool> saveSos(UserSos sos, {bool attemptImmediate = true}) async {
     final queueId = await queue.enqueue(
       ownerUid: sos.userId ?? ownerUid,
       entityType: 'user_sos',
@@ -448,7 +445,7 @@ class SyncService extends ChangeNotifier {
       },
     );
 
-    if (await isOnline()) {
+    if (attemptImmediate && await isOnline()) {
       try {
         await _syncSingleItem(queueId);
         return true;
@@ -471,10 +468,7 @@ class SyncService extends ChangeNotifier {
       if (entry.entityType == 'user_sos' && sosSubmitter != null) {
         await sosSubmitter(payload);
       } else {
-        await _firestore
-            .collection(_collectionFor(entry.entityType))
-            .doc(entry.entityId)
-            .set(_toFirestoreMap(payload), SetOptions(merge: true));
+        await _syncEntity(entry.entityType, entry.entityId, payload);
       }
       await queue.markCompleted(entry.id);
     } catch (error) {
@@ -484,13 +478,19 @@ class SyncService extends ChangeNotifier {
     }
   }
 
-  String _collectionFor(String type) => switch (type) {
-    'camp' => 'camps',
-    'normal_record' => 'normal_records',
-    'critical_record' => 'critical_records',
-    'user_sos' => 'user_sos',
-    _ => throw ArgumentError('Unknown sync entity: $type'),
-  };
+  Future<void> _syncEntity(String type, String id, Map<String, dynamic> payload) async {
+    final path = switch (type) {
+      'camp' => '/api/camps/$id',
+      'normal_record' => '/api/normal-records/$id',
+      'critical_record' => '/api/critical-records/$id',
+      _ => throw ArgumentError('Unknown sync entity: $type'),
+    };
+    final response = await http.put(Uri.parse('${ApiConfig.matchingBaseUrl}$path'),
+        headers: const {'Content-Type': 'application/json'}, body: jsonEncode(payload));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw StateError('Sync failed (${response.statusCode})');
+    }
+  }
 
   Future<void> _ensureSession() async {
     if (ownerUid != null) return;
@@ -498,21 +498,6 @@ class SyncService extends ChangeNotifier {
   }
 
   Future<void> ensureSession() => _ensureSession();
-
-  Map<String, dynamic> _toFirestoreMap(Map<String, dynamic> payload) {
-    final result = <String, dynamic>{};
-    payload.forEach((key, value) {
-      if (key.endsWith('LocalPath')) return;
-      if (value is String &&
-          (key.endsWith('At') || key == 'foundAt') &&
-          DateTime.tryParse(value) != null) {
-        result[key] = Timestamp.fromDate(DateTime.parse(value));
-      } else {
-        result[key] = value;
-      }
-    });
-    return result;
-  }
 
   Map<String, dynamic> _normalPayload(NormalRecord r) => {
     'name': r.name,

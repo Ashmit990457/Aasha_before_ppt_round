@@ -123,14 +123,25 @@ When natural disasters strike India — floods, earthquakes, cyclones, landslide
 - **Java JDK** ≥ 17
 - **Python** ≥ 3.11
 - **MySQL** ≥ 8.0
-- **MinIO** (optional, fallback to local)
+- **MinIO AIStor Free** with the `aasha-photos` bucket
 
 ### 1. Setup Backend
 
 ```bash
 cd spring-boot-backend
-# Update src/main/resources/application.properties with DB/MinIO info
-./gradlew bootRun
+$env:DB_PASSWORD = "<your-local-mysql-password>"
+$env:JWT_SECRET = "<a-local-secret-at-least-32-bytes>"
+$env:MINIO_ENDPOINT = "http://127.0.0.1:9000"
+$env:MINIO_ACCESS_KEY = "<your-minio-access-key>"
+$env:MINIO_SECRET_KEY = "<your-minio-secret-key>"
+$env:MINIO_BUCKET = "aasha-photos"
+$env:MATCHING_AI_URL = "http://localhost:8000/api/v1/match"
+$env:MEDIA_BASE_URL = "http://192.168.0.111:8080"
+$env:FIREBASE_NOTIFICATIONS_ENABLED = "false"
+# When FCM is configured, set these without committing credentials:
+# $env:GOOGLE_APPLICATION_CREDENTIALS = "C:\\private\\firebase-service-account.json"
+# $env:FIREBASE_PROJECT_ID = "<firebase-project-id>"
+.\gradlew.bat bootRun
 ```
 
 ### 2. Setup AI Service
@@ -138,19 +149,54 @@ cd spring-boot-backend
 ```bash
 cd ai-service
 python -m venv venv
-source venv/bin/activate
+venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python -m uvicorn app.main:app --port 8000
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
+
+`MEDIA_BASE_URL` is the Spring Boot LAN URL used in normal match-result photo links. It must be reachable from the physical phone; do not use the laptop-only MinIO address there.
 
 ### 3. Setup Flutter
 
 ```bash
 cd flutter-app
 flutter pub get
-# Ensure API_BASE_URL points to your backend
-flutter run --dart-define=API_BASE_URL=http://your-ip:8080
+flutter run -d windows --dart-define=API_BASE_URL=http://localhost:8080
 ```
+
+Start order: MySQL, MinIO, Python AI, Spring Boot, then Flutter. Spring Boot writes image bytes to MinIO and stores the JSON image reference in MySQL; Python receives candidates from Spring Boot and reads shortlisted objects from MinIO.
+
+For local Windows startup, persist the required USER-level environment variables
+once, then open a new PowerShell and run:
+
+```powershell
+.\start-asha.ps1
+```
+
+The script validates MySQL, MinIO, AI reachability, Firebase credentials, and
+required configuration before starting Spring Boot. It never contains or prints
+secret values. The database password and MinIO secret key must be supplied from
+the existing local installation if they are not already present in the USER
+environment.
+
+Production storage and candidate sources are MySQL and MinIO. Firebase/Firestore, Cloudinary, and MongoDB are not part of the production matching or storage flow.
+
+### Government alert push notifications
+
+The Flutter Android app registers authenticated normal-user FCM tokens at
+`POST /api/notifications/device-token`. When a Head Official activates an
+alert, Spring Boot sends a high-priority FCM message to active registered
+normal-user devices. The Android emergency channel uses a roughly 10-second
+vibration pattern and opens the Emergency Alerts screen when tapped.
+
+To enable delivery locally, add the Firebase Android app configuration as the
+uncommitted `flutter-app/android/app/google-services.json`, set
+`FIREBASE_NOTIFICATIONS_ENABLED=true`, and provide Firebase Admin credentials
+through Google Application Default Credentials (`GOOGLE_APPLICATION_CREDENTIALS`)
+plus `FIREBASE_PROJECT_ID` if needed. Without those values, the application
+still builds and logs `notification_dispatch=NOT_CONFIGURED`; no notification
+is sent. Firebase is used only for push delivery, not for Asha storage,
+matching, SOS, or alert authorization.
 
 ---
 

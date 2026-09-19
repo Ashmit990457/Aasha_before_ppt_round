@@ -27,6 +27,20 @@ public interface CriticalRecordRepository extends JpaRepository<CriticalRecord, 
 
     List<CriticalRecord> findTop20ByOrderByCreatedAtDesc();
 
+    List<CriticalRecord> findTop20ByIncidentIdOrderByCreatedAtDesc(String incidentId);
+
+    @Query("SELECT r FROM CriticalRecord r WHERE r.incidentId = :incidentId AND LOWER(r.name) LIKE LOWER(CONCAT('%', :name, '%')) ORDER BY r.createdAt DESC")
+    List<CriticalRecord> findByIncidentIdAndNameContainingLimited(@Param("incidentId") String incidentId, @Param("name") String name, org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT r FROM CriticalRecord r WHERE r.incidentId = :incidentId AND (LOWER(r.name) LIKE LOWER(CONCAT('%', :token, '%')) OR LOWER(COALESCE(r.additionalDetails, '')) LIKE LOWER(CONCAT('%', :token, '%'))) ORDER BY r.createdAt DESC")
+    List<CriticalRecord> findByIncidentIdAndToken(@Param("incidentId") String incidentId, @Param("token") String token, org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT r FROM CriticalRecord r WHERE r.incidentId = :incidentId AND r.age BETWEEN :minimumAge AND :maximumAge ORDER BY r.createdAt DESC")
+    List<CriticalRecord> findByIncidentIdAndAgeBetween(@Param("incidentId") String incidentId, @Param("minimumAge") int minimumAge, @Param("maximumAge") int maximumAge, org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT r FROM CriticalRecord r WHERE r.incidentId = :incidentId AND (LOWER(COALESCE(r.foundLocation, '')) LIKE LOWER(CONCAT('%', :location, '%')) OR LOWER(COALESCE(r.campName, '')) LIKE LOWER(CONCAT('%', :location, '%')) OR LOWER(COALESCE(r.additionalDetails, '')) LIKE LOWER(CONCAT('%', :location, '%'))) ORDER BY r.createdAt DESC")
+    List<CriticalRecord> findByIncidentIdAndLocationContaining(@Param("incidentId") String incidentId, @Param("location") String location, org.springframework.data.domain.Pageable pageable);
+
     @Query("SELECT r FROM CriticalRecord r WHERE r.age BETWEEN :minimumAge AND :maximumAge ORDER BY r.createdAt DESC")
     List<CriticalRecord> findByAgeBetween(@Param("minimumAge") int minimumAge, @Param("maximumAge") int maximumAge, org.springframework.data.domain.Pageable pageable);
 

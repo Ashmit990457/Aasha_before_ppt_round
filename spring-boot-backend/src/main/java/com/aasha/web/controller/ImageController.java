@@ -8,7 +8,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 import java.util.Map;
@@ -110,23 +112,54 @@ public class ImageController {
         return ResponseEntity.ok(Map.of("status", "deleted"));
     }
 
-    @GetMapping("/file/{path:.+}")
-    public ResponseEntity<byte[]> serveFile(@PathVariable String path) {
+    @GetMapping("/file/**")
+    public ResponseEntity<byte[]> serveFile(HttpServletRequest request) {
+        String path = pathAfter(request, "/api/v1/images/file/");
+        String recordId = recordId(path);
+        log.debug("[IMAGE-DELIVERY-DEBUG] record_id={} storage_reference={}", recordId, path);
         try {
-            java.nio.file.Path filePath = java.nio.file.Paths.get("uploads", "photos", path);
-            java.nio.file.Path absolutePath = filePath.toAbsolutePath();
-            log.info("Serving file: {}", absolutePath);
-            if (java.nio.file.Files.exists(absolutePath)) {
-                byte[] bytes = java.nio.file.Files.readAllBytes(absolutePath);
-                String contentType = path.endsWith(".png") ? "image/png" : "image/jpeg";
-                return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_TYPE, contentType)
-                    .body(bytes);
+            if (!path.startsWith("normal/")) {
+                log.debug("[IMAGE-DELIVERY-DEBUG] record_id={} status=404", recordId);
+                return ResponseEntity.notFound().build();
             }
-            log.warn("File not found: {}", absolutePath);
+            byte[] bytes = photoService.getImageBytes(path);
+            String contentType = path.endsWith(".png") ? "image/png"
+                    : path.endsWith(".webp") ? "image/webp" : "image/jpeg";
+            log.debug("[IMAGE-DELIVERY-DEBUG] record_id={} status=200", recordId);
+            return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, contentType).body(bytes);
         } catch (Exception e) {
-            log.error("Failed to serve file: {}", path, e);
+            log.warn("[IMAGE-DELIVERY-DEBUG] record_id={} status=404 error_type={} error={}",
+                    recordId, e.getClass().getSimpleName(), e.getMessage());
         }
         return ResponseEntity.notFound().build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/secure-file/**")
+    public ResponseEntity<byte[]> serveSecureFile(HttpServletRequest request) {
+        String path = pathAfter(request, "/api/v1/images/secure-file/");
+        String recordId = recordId(path);
+        try {
+            if (path.startsWith("normal/")) return ResponseEntity.notFound().build();
+            byte[] bytes = photoService.getImageBytes(path);
+            String contentType = path.endsWith(".png") ? "image/png"
+                    : path.endsWith(".webp") ? "image/webp" : "image/jpeg";
+            log.debug("[IMAGE-DELIVERY-DEBUG] record_id={} status=200", recordId);
+            return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, contentType).body(bytes);
+        } catch (Exception e) {
+            log.warn("[IMAGE-DELIVERY-DEBUG] record_id={} status=404 error_type={} error={}",
+                    recordId, e.getClass().getSimpleName(), e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    private String pathAfter(HttpServletRequest request, String prefix) {
+        String uri = request.getRequestURI();
+        return uri.startsWith(prefix) ? uri.substring(prefix.length()) : "";
+    }
+
+    private String recordId(String path) {
+        String[] parts = path.split("/");
+        return parts.length > 1 ? parts[1] : "unknown";
     }
 }

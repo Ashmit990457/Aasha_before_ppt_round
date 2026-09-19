@@ -34,13 +34,11 @@ void main() {
     final body = jsonDecode(client.body) as Map<String, dynamic>;
     expect(body['id'], 'success');
     expect(body.containsKey('userId'), isFalse);
-    expect(
-      (await sync.queue.getByStatus('completed')).single.entityId,
-      'success',
-    );
+    expect(await sync.queue.getByStatus('completed'), isEmpty);
+    expect(await sync.queue.getPending(), isEmpty);
   });
 
-  test('does not report success for unauthorized responses', () async {
+  test('does not classify unauthorized responses as offline', () async {
     final sync = _onlineSync(database);
     final repository = SpringBootEmergencyRepository(
       client: _RecordingClient(401, '{}'),
@@ -50,12 +48,25 @@ void main() {
 
     final result = await repository.submitSos(_sos('unauthorized'));
 
-    expect(result.state, SosDeliveryState.pendingLocal);
-    expect(
-      (await sync.queue.getByStatus('failed')).single.entityId,
-      'unauthorized',
-    );
-    expect(result.message, isNot(contains('sent')));
+    expect(result.state, SosDeliveryState.failed);
+    expect(await sync.queue.getByStatus('failed'), isEmpty);
+    expect(result.message, contains('authentication expired'));
+  });
+
+  test('does not classify bad request or forbidden responses as offline', () async {
+    for (final status in [400, 403]) {
+      final sync = _onlineSync(database);
+      final repository = SpringBootEmergencyRepository(
+        client: _RecordingClient(status, '{}'),
+        syncService: sync,
+        tokenProvider: () async => 'jwt-token',
+      );
+
+      final result = await repository.submitSos(_sos('http-$status'));
+
+      expect(result.state, SosDeliveryState.failed);
+      expect(await sync.queue.getPending(), isEmpty);
+    }
   });
 
   test('does not report success after a network failure', () async {
@@ -69,7 +80,27 @@ void main() {
     final result = await repository.submitSos(_sos('offline'));
 
     expect(result.state, SosDeliveryState.pendingLocal);
-    expect((await sync.queue.getByStatus('failed')).single.entityId, 'offline');
+    expect((await sync.queue.getPending()).single.entityId, 'offline');
+  });
+
+  test('queued SOS retries through the same submitter and completes once reachable', () async {
+    final client = _FlakyClient();
+    final sync = _onlineSync(database);
+    final repository = SpringBootEmergencyRepository(
+      client: client,
+      syncService: sync,
+      tokenProvider: () async => 'jwt-token',
+    );
+
+    final first = await repository.submitSos(_sos('retryable'));
+    expect(first.state, SosDeliveryState.pendingLocal);
+    expect((await sync.queue.getPending()).single.entityId, 'retryable');
+
+    client.fail = false;
+    await sync.processPendingQueue();
+
+    expect((await sync.queue.getByStatus('completed')).single.entityId, 'retryable');
+    expect(client.attempts, 2);
   });
 
   test('serializes all client SOS metadata', () {
@@ -124,4 +155,20 @@ class _FailingClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) =>
       Future.error(const SocketException('offline'));
+}
+
+class _FlakyClient extends http.BaseClient {
+  bool fail = true;
+  int attempts = 0;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    attempts++;
+    if (fail) return Future.error(const SocketException('offline'));
+    return http.StreamedResponse(
+      Stream.value(utf8.encode('{}')),
+      201,
+      request: request,
+    );
+  }
 }

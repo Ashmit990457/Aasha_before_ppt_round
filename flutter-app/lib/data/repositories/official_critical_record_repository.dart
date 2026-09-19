@@ -11,6 +11,7 @@ class OfficialCriticalRecordRepository {
       Uri.parse('$_baseUrl/api/critical-records'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
+        'incident_id': record.incidentId,
         'name': record.name,
         'age': record.age,
         'photoUrl': record.photoUrl,

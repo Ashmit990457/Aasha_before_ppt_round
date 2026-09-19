@@ -12,6 +12,7 @@ enum NormalRecordStatus {
 
 class NormalRecord {
   final String id;
+  final String? incidentId;
   final String name;
   final int age;
   final String? photoUrl;
@@ -29,6 +30,7 @@ class NormalRecord {
 
   NormalRecord({
     required this.id,
+    this.incidentId,
     required this.name,
     required this.age,
     this.photoUrl,
@@ -47,6 +49,7 @@ class NormalRecord {
 
   Map<String, dynamic> toMap() {
     return {
+      'incidentId': incidentId,
       'name': name,
       'age': age,
       'photoUrl': photoUrl,
@@ -64,6 +67,7 @@ class NormalRecord {
   factory NormalRecord.fromMap(String id, Map<String, dynamic> map) {
     return NormalRecord(
       id: id,
+      incidentId: map['incidentId'] ?? map['incident_id'],
       name: map['name'] ?? '',
       age: map['age'] ?? 0,
       photoUrl: map['photoUrl'],

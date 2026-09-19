@@ -168,6 +168,14 @@ class _OfficialDashboardScreenState extends State<OfficialDashboardScreen> {
                   '/sos_requests',
                   color: AppTheme.accentColor,
                 ),
+                if (context.watch<AppState>().isHeadOfficial)
+                  _buildActionCard(
+                    context,
+                    Icons.campaign,
+                    'Government Alerts',
+                    '/government_alerts_management',
+                    color: AppTheme.accentColor,
+                  ),
               ],
             ),
           ],

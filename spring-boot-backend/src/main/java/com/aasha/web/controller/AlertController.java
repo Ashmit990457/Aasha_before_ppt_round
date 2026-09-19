@@ -31,13 +31,14 @@ public class AlertController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('OFFICIAL')")
-    public ResponseEntity<AlertResponse> create(@Valid @RequestBody AlertRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request));
+    @PreAuthorize("@headOfficialAuthorization.isHeadOfficial(authentication)")
+    public ResponseEntity<AlertResponse> create(@Valid @RequestBody AlertRequest request,
+                                                 org.springframework.security.core.Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request, authentication.getName()));
     }
 
     @PatchMapping("/{id}/active")
-    @PreAuthorize("hasRole('OFFICIAL')")
+    @PreAuthorize("@headOfficialAuthorization.isHeadOfficial(authentication)")
     public ResponseEntity<AlertResponse> setActive(
             @PathVariable Long id,
             @RequestBody Map<String, Boolean> request
@@ -46,6 +47,15 @@ public class AlertController {
             throw new IllegalArgumentException("active is required");
         }
         return ResponseEntity.ok(service.setActive(id, request.get("active")));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("@headOfficialAuthorization.isHeadOfficial(authentication)")
+    public ResponseEntity<AlertResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody AlertRequest request
+    ) {
+        return ResponseEntity.ok(service.update(id, request));
     }
 
     @ExceptionHandler({IllegalArgumentException.class})

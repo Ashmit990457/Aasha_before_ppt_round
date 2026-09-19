@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../core/app_state.dart';
 import '../../../core/common_widgets/app_button.dart';
 import '../../../core/common_widgets/app_text_field.dart';
 import '../../../features/matching/data/models/match_request.dart';
@@ -6,6 +8,8 @@ import '../../images/data/image_selection_service.dart';
 import '../../images/data/image_upload_api_service.dart';
 import '../../images/data/local_image.dart';
 import '../../images/presentation/image_source_picker.dart';
+import '../../incidents/data/incident_repository.dart';
+import '../../incidents/data/models/incident.dart';
 
 class SearchFormScreen extends StatefulWidget {
   const SearchFormScreen({super.key});
@@ -22,8 +26,40 @@ class _SearchFormScreenState extends State<SearchFormScreen> {
   final _detailsController = TextEditingController();
   final ImageSelectionService _imageSelection = LocalImageSelectionService();
   final ImageUploadApiService _imageUpload = HttpImageUploadApiService();
+  late final IncidentRepository _incidentRepository;
   LocalImage? _selectedImage;
   bool _isSubmitting = false;
+  bool _isLoadingIncidents = true;
+  List<Incident> _deduplicatedIncidents = const [];
+  String? _selectedIncidentId;
+
+  @override
+  void initState() {
+    super.initState();
+    final authService = context.read<AppState>().authService;
+    _incidentRepository = IncidentRepository(authService: authService);
+    _loadIncidents();
+  }
+
+  Future<void> _loadIncidents() async {
+    try {
+      final incidents = await _incidentRepository.getActiveSearchable();
+      final uniqueMap = <String, Incident>{};
+      for (final incident in incidents) {
+        if (incident.id.isNotEmpty) {
+          uniqueMap[incident.id] = incident;
+        }
+      }
+      final deduplicated = uniqueMap.values.toList();
+      debugPrint('[INCIDENT-UI-DEBUG] incident_count=${deduplicated.length}');
+      debugPrint('[INCIDENT-UI-DEBUG] incidents=${deduplicated.map((i) => '${i.id}:${i.name}').join(', ')}');
+      if (mounted) setState(() { _deduplicatedIncidents = deduplicated; _isLoadingIncidents = false; });
+    } catch (error) {
+      debugPrint('[INCIDENT-UI-DEBUG] search incident load failed: $error');
+      debugPrint('[INCIDENT-UI-DEBUG] incident_load_error=$error');
+      if (mounted) setState(() => _isLoadingIncidents = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -55,6 +91,11 @@ class _SearchFormScreenState extends State<SearchFormScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate() || _isSubmitting) return;
+    if (_selectedIncidentId == null) {
+      _showMessage('Select an active disaster incident before searching.');
+      return;
+    }
+    debugPrint('[INCIDENT-UI-DEBUG] selected_incident_id=$_selectedIncidentId');
     setState(() => _isSubmitting = true);
     try {
       String? photoReference;
@@ -64,13 +105,14 @@ class _SearchFormScreenState extends State<SearchFormScreen> {
           requestId: requestId,
           image: _selectedImage!,
         );
-        photoReference = uploaded.assetId;
+        photoReference = uploaded.storageId;
       }
       if (!mounted) return;
       Navigator.pushReplacementNamed(
         context,
         '/results',
         arguments: MatchRequest(
+          incidentId: _selectedIncidentId!,
           name: _nameController.text.trim(),
           age: int.parse(_ageController.text),
           photoReference: photoReference,
@@ -93,6 +135,8 @@ class _SearchFormScreenState extends State<SearchFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dropdownEnabled = !_isLoadingIncidents && _deduplicatedIncidents.isNotEmpty;
+    debugPrint('[INCIDENT-UI-DEBUG] loading=$_isLoadingIncidents dropdown_enabled=$dropdownEnabled');
     return Scaffold(
       appBar: AppBar(title: const Text('Missing Person Details')),
       body: Form(
@@ -106,6 +150,24 @@ class _SearchFormScreenState extends State<SearchFormScreen> {
                 'Enter as much information as possible to help our AI find a match.',
                 style: TextStyle(color: Colors.grey),
               ),
+              const SizedBox(height: 24),
+              if (_isLoadingIncidents)
+                const Center(child: CircularProgressIndicator())
+              else
+                DropdownButtonFormField<String>(
+                  value: _selectedIncidentId,
+                  decoration: const InputDecoration(
+                    labelText: 'Disaster Incident',
+                    helperText: 'Search is limited to this incident.',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: _deduplicatedIncidents.map((incident) => DropdownMenuItem(
+                    value: incident.id,
+                    child: Text(incident.name),
+                  )).toList(),
+                  onChanged: dropdownEnabled ? (value) => setState(() => _selectedIncidentId = value) : null,
+                  validator: (value) => value == null ? 'Incident is required' : null,
+                ),
               const SizedBox(height: 24),
               Center(
                 child: Column(

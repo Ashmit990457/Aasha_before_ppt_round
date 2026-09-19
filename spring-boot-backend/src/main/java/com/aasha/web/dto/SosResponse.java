@@ -12,11 +12,12 @@ public record SosResponse(
         String message,
         String status,
         LocalDateTime createdAt,
-        LocalDateTime receivedAt
+        LocalDateTime receivedAt,
+        LocalDateTime updatedAt
 ) {
     public static SosResponse from(UserSos sos) {
         return new SosResponse(sos.getId(), sos.getUserUid(), sos.getLatitude(),
                 sos.getLongitude(), sos.getAccuracy(), sos.getMessage(), sos.getStatus(),
-                sos.getCreatedAt(), sos.getReceivedAt());
+                sos.getCreatedAt(), sos.getReceivedAt(), sos.getUpdatedAt());
     }
 }

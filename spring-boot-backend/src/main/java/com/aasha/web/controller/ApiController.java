@@ -22,12 +22,15 @@ public class ApiController {
     private final NormalRecordRepository normalRepo;
     private final CriticalRecordRepository criticalRepo;
     private final NotificationService notificationService;
+    private final com.aasha.web.service.IncidentService incidentService;
 
-    public ApiController(CampRepository campRepo, NormalRecordRepository normalRepo, CriticalRecordRepository criticalRepo, NotificationService notificationService) {
+    public ApiController(CampRepository campRepo, NormalRecordRepository normalRepo, CriticalRecordRepository criticalRepo,
+                         NotificationService notificationService, com.aasha.web.service.IncidentService incidentService) {
         this.campRepo = campRepo;
         this.normalRepo = normalRepo;
         this.criticalRepo = criticalRepo;
         this.notificationService = notificationService;
+        this.incidentService = incidentService;
     }
 
     // ==================== CAMPS ====================
@@ -76,6 +79,7 @@ public class ApiController {
 
     @PostMapping("/normal-records")
     public ResponseEntity<NormalRecord> createNormalRecord(@RequestBody NormalRecord record) {
+        incidentService.requireActiveSearchable(record.getIncidentId());
         record.setId(UUID.randomUUID().toString());
         NormalRecord saved = normalRepo.save(record);
 
@@ -125,6 +129,7 @@ public class ApiController {
 
     @PostMapping("/critical-records")
     public ResponseEntity<CriticalRecord> createCriticalRecord(@RequestBody CriticalRecord record) {
+        incidentService.requireActiveSearchable(record.getIncidentId());
         record.setId(UUID.randomUUID().toString());
         CriticalRecord saved = criticalRepo.save(record);
 
@@ -174,6 +179,7 @@ public class ApiController {
     @PostMapping("/sync/normal-records")
     public ResponseEntity<?> syncNormalRecords(@RequestBody List<NormalRecord> records) {
         for (NormalRecord record : records) {
+            incidentService.requireActiveSearchable(record.getIncidentId());
             if (record.getId() == null || record.getId().isEmpty()) {
                 record.setId(UUID.randomUUID().toString());
             }
@@ -185,6 +191,7 @@ public class ApiController {
     @PostMapping("/sync/critical-records")
     public ResponseEntity<?> syncCriticalRecords(@RequestBody List<CriticalRecord> records) {
         for (CriticalRecord record : records) {
+            incidentService.requireActiveSearchable(record.getIncidentId());
             if (record.getId() == null || record.getId().isEmpty()) {
                 record.setId(UUID.randomUUID().toString());
             }

@@ -5,7 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'local_image.dart';
 
 /// Keeps the selected bytes on the device until the existing sync queue has
-/// successfully uploaded them. It never places image bytes in Firestore.
+/// successfully uploaded them. It never places image bytes in a remote database.
 class LocalImageStore {
   const LocalImageStore();
 

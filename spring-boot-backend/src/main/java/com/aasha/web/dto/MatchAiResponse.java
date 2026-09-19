@@ -23,6 +23,7 @@ public class MatchAiResponse {
 
     public static class Result {
         @JsonProperty("record_id") private String recordId;
+        @JsonProperty("incident_id") private String incidentId;
         private String name;
         private Integer age;
         @JsonProperty("camp_name") private String campName;
@@ -38,6 +39,8 @@ public class MatchAiResponse {
 
         public String getRecordId() { return recordId; }
         public void setRecordId(String value) { recordId = value; }
+        public String getIncidentId() { return incidentId; }
+        public void setIncidentId(String value) { incidentId = value; }
         public String getName() { return name; }
         public void setName(String value) { name = value; }
         public Integer getAge() { return age; }

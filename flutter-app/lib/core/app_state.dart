@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import '../data/models/app_user.dart';
 import '../data/models/auth_status.dart';
 import '../features/auth/data/auth_service.dart';
-import '../data/repositories/user_repository.dart';
 import '../data/sync/sync_service.dart';
+import 'config/api_config.dart';
+import '../features/emergency/data/push_notification_service.dart';
 
 class AppState extends ChangeNotifier {
   final AuthService _authService = AuthService();
-  final UserRepository _userRepository = UserRepository();
   final SyncService syncService = SyncService.instance;
 
   AppUser? _userProfile;
@@ -27,9 +27,15 @@ class AppState extends ChangeNotifier {
   bool get isAuthenticated => _authService.isLoggedIn;
   String? get token => _authService.token;
   String? get uid => _authService.uid;
+  AuthService get authService => _authService;
+  bool get isHeadOfficial =>
+      _userProfile?.role == UserRole.official &&
+      _userProfile?.email.toLowerCase() ==
+          ApiConfig.headOfficialEmail.toLowerCase();
 
   // Compatibility getter for screens that reference firebaseUser
-  dynamic get firebaseUser => _authService.isLoggedIn ? _FirebaseUserProxy(_authService) : null;
+  dynamic get firebaseUser =>
+      _authService.isLoggedIn ? _FirebaseUserProxy(_authService) : null;
 
   Future<void> _init() async {
     final autoLoggedIn = await _authService.tryAutoLogin();
@@ -45,6 +51,11 @@ class AppState extends ChangeNotifier {
         approved: _authService.approved ?? true,
       );
       _updateStatus();
+      if (_userProfile?.role == UserRole.user) {
+        await PushNotificationService.instance.initializeForUser(
+          _userProfile!.id,
+        );
+      }
     } else {
       _status = AuthStatus.unauthenticated;
     }
@@ -88,6 +99,11 @@ class AppState extends ChangeNotifier {
         ),
         approved: _authService.approved ?? true,
       );
+      if (_userProfile!.role == UserRole.user) {
+        await PushNotificationService.instance.initializeForUser(
+          _userProfile!.id,
+        );
+      }
     }
 
     _updateStatus();
@@ -95,7 +111,13 @@ class AppState extends ChangeNotifier {
     return error;
   }
 
-  Future<String?> register(String email, String password, String name, {String? phone, String role = 'user'}) async {
+  Future<String?> register(
+    String email,
+    String password,
+    String name, {
+    String? phone,
+    String role = 'user',
+  }) async {
     _status = AuthStatus.loading;
     notifyListeners();
 
@@ -119,6 +141,11 @@ class AppState extends ChangeNotifier {
         ),
         approved: _authService.approved ?? true,
       );
+      if (_userProfile!.role == UserRole.user) {
+        await PushNotificationService.instance.initializeForUser(
+          _userProfile!.id,
+        );
+      }
     }
 
     _updateStatus();

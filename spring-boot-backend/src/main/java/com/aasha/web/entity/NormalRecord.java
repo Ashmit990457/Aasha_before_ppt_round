@@ -11,6 +11,9 @@ public class NormalRecord {
     @Column(length = 36)
     private String id;
 
+    @Column(name = "incident_id", length = 64)
+    private String incidentId;
+
     @Column(nullable = false)
     private String name;
 
@@ -62,6 +65,8 @@ public class NormalRecord {
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
+    public String getIncidentId() { return incidentId; }
+    public void setIncidentId(String value) { incidentId = value; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public Integer getAge() { return age; }

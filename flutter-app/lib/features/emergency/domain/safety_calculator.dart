@@ -44,6 +44,49 @@ class SafetyCalculator {
     );
   }
 
+  static SafetyResult classifyWithFixedZones({
+    required double userLatitude,
+    required double userLongitude,
+    required double disasterLatitude,
+    required double disasterLongitude,
+    required double redZoneKm,
+    required double yellowZoneKm,
+    required double greenZoneKm,
+  }) {
+    if (!_validCoordinate(userLatitude, userLongitude) ||
+        !_validCoordinate(disasterLatitude, disasterLongitude) ||
+        !redZoneKm.isFinite ||
+        redZoneKm <= 0 ||
+        !yellowZoneKm.isFinite ||
+        yellowZoneKm <= 0 ||
+        !greenZoneKm.isFinite ||
+        greenZoneKm <= 0) {
+      return const SafetyResult(zone: SafetyZone.unknown);
+    }
+
+    final distanceKm = distanceKmBetween(
+      userLatitude,
+      userLongitude,
+      disasterLatitude,
+      disasterLongitude,
+    );
+
+    final zone = distanceKm <= redZoneKm
+        ? SafetyZone.red
+        : distanceKm <= yellowZoneKm
+        ? SafetyZone.yellow
+        : distanceKm <= greenZoneKm
+        ? SafetyZone.green
+        : SafetyZone.safe;
+
+    return SafetyResult(
+      zone: zone,
+      distanceFromDisasterKm: distanceKm,
+      radiusKm: greenZoneKm,
+      percentageOfRadius: distanceKm / greenZoneKm,
+    );
+  }
+
   static double distanceKmBetween(
     double firstLatitude,
     double firstLongitude,

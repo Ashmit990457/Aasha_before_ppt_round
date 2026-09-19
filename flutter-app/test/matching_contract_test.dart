@@ -8,6 +8,7 @@ import 'package:aasha/features/matching/data/services/match_api_service.dart';
 void main() {
   test('valid match request serializes the contract fields', () {
     final request = MatchRequest(
+      incidentId: 'incident-101',
       name: '  Jane Doe ',
       age: 24,
       photoReference: 'future-reference',
@@ -17,6 +18,7 @@ void main() {
 
     expect(request.validate(), isEmpty);
     expect(request.toJson(), {
+      'incident_id': 'incident-101',
       'name': 'Jane Doe',
       'age': 24,
       'photo': 'future-reference',
@@ -29,11 +31,11 @@ void main() {
     final repository = MatchRepository(_FakeApi());
 
     expect(
-      () => repository.findMatches(MatchRequest(name: ' ', age: 24)),
+      () => repository.findMatches(MatchRequest(incidentId: 'incident-101', name: ' ', age: 24)),
       throwsA(isA<MatchApiException>()),
     );
     expect(
-      () => repository.findMatches(MatchRequest(name: 'Jane', age: 131)),
+      () => repository.findMatches(MatchRequest(incidentId: 'incident-101', name: 'Jane', age: 131)),
       throwsA(isA<MatchApiException>()),
     );
   });
@@ -124,6 +126,70 @@ void main() {
     expect(response.results[1], isA<CriticalMatchResult>());
   });
 
+  test('photo match request sends the storage object reference in photo', () {
+    const uploaded = {
+      'storageId': 'match-input/request-1/photo.webp',
+      'assetId': 'opaque-asset-id',
+    };
+    final request = MatchRequest(
+      incidentId: 'incident-101',
+      name: 'ganpati',
+      age: 20,
+      photoReference: uploaded['storageId'],
+    );
+
+    expect(request.toJson()['photo'], 'match-input/request-1/photo.webp');
+    expect(request.toJson()['photo'], isNot('opaque-asset-id'));
+  });
+
+  test('normal match response preserves the backend photo URL', () {
+    final response = MatchResponse.fromJson({
+      'request_id': 'photo-request',
+      'results': [
+        {
+          'record_id': 'normal-ganpati',
+          'name': 'ganpati',
+          'age': 20,
+          'camp_name': 'Demo Camp',
+          'officer_name': 'Officer',
+          'officer_contact': '123',
+          'status': 'AT_CAMP',
+          'match_score': 88.5,
+          'record_type': 'normal',
+          'photo_url': 'http://192.168.0.111:8080/api/v1/images/file/normal/normal-ganpati/photo.jpg',
+        },
+      ],
+      'has_more': false,
+    });
+
+    final result = response.results.single as NormalMatchResult;
+    expect(result.photoUrl, contains('/api/v1/images/file/normal/'));
+  });
+
+  test('normal match response preserves a Spring relative photo endpoint', () {
+    final response = MatchResponse.fromJson({
+      'request_id': 'relative-photo-request',
+      'results': [
+        {
+          'record_id': 'normal-1',
+          'name': 'ganpati',
+          'age': 20,
+          'camp_name': 'Camp',
+          'officer_name': 'Officer',
+          'officer_contact': '123',
+          'status': 'AT_CAMP',
+          'match_score': 73.96,
+          'record_type': 'normal',
+          'photo_url': '/api/v1/images/file/normal/record/photo.webp',
+        },
+      ],
+      'has_more': false,
+    });
+
+    expect((response.results.single as NormalMatchResult).photoUrl,
+        '/api/v1/images/file/normal/record/photo.webp');
+  });
+
   test('critical response parses only sanitized public fields', () {
     final response = MatchResponse.fromJson({
       'hasMore': false,
@@ -153,7 +219,7 @@ void main() {
 
   test('top three and load-more continuation are represented', () async {
     final response = await MatchRepository(_FakeApi()).findMatches(
-      MatchRequest(name: 'Jane', age: 24),
+      MatchRequest(incidentId: 'incident-101', name: 'Jane', age: 24),
     );
     expect(response.results, hasLength(3));
     expect(response.nextPageToken, 'page-2');

@@ -3170,6 +3170,39 @@ class $EmergencyAlertsTable extends EmergencyAlerts
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _redZoneKmMeta = const VerificationMeta(
+    'redZoneKm',
+  );
+  @override
+  late final GeneratedColumn<double> redZoneKm = GeneratedColumn<double>(
+    'red_zone_km',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _yellowZoneKmMeta = const VerificationMeta(
+    'yellowZoneKm',
+  );
+  @override
+  late final GeneratedColumn<double> yellowZoneKm = GeneratedColumn<double>(
+    'yellow_zone_km',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _greenZoneKmMeta = const VerificationMeta(
+    'greenZoneKm',
+  );
+  @override
+  late final GeneratedColumn<double> greenZoneKm = GeneratedColumn<double>(
+    'green_zone_km',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _activeMeta = const VerificationMeta('active');
   @override
   late final GeneratedColumn<bool> active = GeneratedColumn<bool>(
@@ -3217,6 +3250,9 @@ class $EmergencyAlertsTable extends EmergencyAlerts
     latitude,
     longitude,
     radiusKm,
+    redZoneKm,
+    yellowZoneKm,
+    greenZoneKm,
     active,
     createdAt,
     cachedAt,
@@ -3298,6 +3334,30 @@ class $EmergencyAlertsTable extends EmergencyAlerts
         radiusKm.isAcceptableOrUnknown(data['radius_km']!, _radiusKmMeta),
       );
     }
+    if (data.containsKey('red_zone_km')) {
+      context.handle(
+        _redZoneKmMeta,
+        redZoneKm.isAcceptableOrUnknown(data['red_zone_km']!, _redZoneKmMeta),
+      );
+    }
+    if (data.containsKey('yellow_zone_km')) {
+      context.handle(
+        _yellowZoneKmMeta,
+        yellowZoneKm.isAcceptableOrUnknown(
+          data['yellow_zone_km']!,
+          _yellowZoneKmMeta,
+        ),
+      );
+    }
+    if (data.containsKey('green_zone_km')) {
+      context.handle(
+        _greenZoneKmMeta,
+        greenZoneKm.isAcceptableOrUnknown(
+          data['green_zone_km']!,
+          _greenZoneKmMeta,
+        ),
+      );
+    }
     if (data.containsKey('active')) {
       context.handle(
         _activeMeta,
@@ -3369,6 +3429,18 @@ class $EmergencyAlertsTable extends EmergencyAlerts
         DriftSqlType.double,
         data['${effectivePrefix}radius_km'],
       ),
+      redZoneKm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}red_zone_km'],
+      ),
+      yellowZoneKm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}yellow_zone_km'],
+      ),
+      greenZoneKm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}green_zone_km'],
+      ),
       active: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}active'],
@@ -3401,6 +3473,9 @@ class EmergencyAlert extends DataClass implements Insertable<EmergencyAlert> {
   final double? latitude;
   final double? longitude;
   final double? radiusKm;
+  final double? redZoneKm;
+  final double? yellowZoneKm;
+  final double? greenZoneKm;
   final bool active;
   final DateTime createdAt;
   final DateTime cachedAt;
@@ -3415,6 +3490,9 @@ class EmergencyAlert extends DataClass implements Insertable<EmergencyAlert> {
     this.latitude,
     this.longitude,
     this.radiusKm,
+    this.redZoneKm,
+    this.yellowZoneKm,
+    this.greenZoneKm,
     required this.active,
     required this.createdAt,
     required this.cachedAt,
@@ -3443,6 +3521,15 @@ class EmergencyAlert extends DataClass implements Insertable<EmergencyAlert> {
     }
     if (!nullToAbsent || radiusKm != null) {
       map['radius_km'] = Variable<double>(radiusKm);
+    }
+    if (!nullToAbsent || redZoneKm != null) {
+      map['red_zone_km'] = Variable<double>(redZoneKm);
+    }
+    if (!nullToAbsent || yellowZoneKm != null) {
+      map['yellow_zone_km'] = Variable<double>(yellowZoneKm);
+    }
+    if (!nullToAbsent || greenZoneKm != null) {
+      map['green_zone_km'] = Variable<double>(greenZoneKm);
     }
     map['active'] = Variable<bool>(active);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -3474,6 +3561,15 @@ class EmergencyAlert extends DataClass implements Insertable<EmergencyAlert> {
       radiusKm: radiusKm == null && nullToAbsent
           ? const Value.absent()
           : Value(radiusKm),
+      redZoneKm: redZoneKm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(redZoneKm),
+      yellowZoneKm: yellowZoneKm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(yellowZoneKm),
+      greenZoneKm: greenZoneKm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(greenZoneKm),
       active: Value(active),
       createdAt: Value(createdAt),
       cachedAt: Value(cachedAt),
@@ -3496,6 +3592,9 @@ class EmergencyAlert extends DataClass implements Insertable<EmergencyAlert> {
       latitude: serializer.fromJson<double?>(json['latitude']),
       longitude: serializer.fromJson<double?>(json['longitude']),
       radiusKm: serializer.fromJson<double?>(json['radiusKm']),
+      redZoneKm: serializer.fromJson<double?>(json['redZoneKm']),
+      yellowZoneKm: serializer.fromJson<double?>(json['yellowZoneKm']),
+      greenZoneKm: serializer.fromJson<double?>(json['greenZoneKm']),
       active: serializer.fromJson<bool>(json['active']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       cachedAt: serializer.fromJson<DateTime>(json['cachedAt']),
@@ -3515,6 +3614,9 @@ class EmergencyAlert extends DataClass implements Insertable<EmergencyAlert> {
       'latitude': serializer.toJson<double?>(latitude),
       'longitude': serializer.toJson<double?>(longitude),
       'radiusKm': serializer.toJson<double?>(radiusKm),
+      'redZoneKm': serializer.toJson<double?>(redZoneKm),
+      'yellowZoneKm': serializer.toJson<double?>(yellowZoneKm),
+      'greenZoneKm': serializer.toJson<double?>(greenZoneKm),
       'active': serializer.toJson<bool>(active),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'cachedAt': serializer.toJson<DateTime>(cachedAt),
@@ -3532,6 +3634,9 @@ class EmergencyAlert extends DataClass implements Insertable<EmergencyAlert> {
     Value<double?> latitude = const Value.absent(),
     Value<double?> longitude = const Value.absent(),
     Value<double?> radiusKm = const Value.absent(),
+    Value<double?> redZoneKm = const Value.absent(),
+    Value<double?> yellowZoneKm = const Value.absent(),
+    Value<double?> greenZoneKm = const Value.absent(),
     bool? active,
     DateTime? createdAt,
     DateTime? cachedAt,
@@ -3546,6 +3651,9 @@ class EmergencyAlert extends DataClass implements Insertable<EmergencyAlert> {
     latitude: latitude.present ? latitude.value : this.latitude,
     longitude: longitude.present ? longitude.value : this.longitude,
     radiusKm: radiusKm.present ? radiusKm.value : this.radiusKm,
+    redZoneKm: redZoneKm.present ? redZoneKm.value : this.redZoneKm,
+    yellowZoneKm: yellowZoneKm.present ? yellowZoneKm.value : this.yellowZoneKm,
+    greenZoneKm: greenZoneKm.present ? greenZoneKm.value : this.greenZoneKm,
     active: active ?? this.active,
     createdAt: createdAt ?? this.createdAt,
     cachedAt: cachedAt ?? this.cachedAt,
@@ -3562,6 +3670,13 @@ class EmergencyAlert extends DataClass implements Insertable<EmergencyAlert> {
       latitude: data.latitude.present ? data.latitude.value : this.latitude,
       longitude: data.longitude.present ? data.longitude.value : this.longitude,
       radiusKm: data.radiusKm.present ? data.radiusKm.value : this.radiusKm,
+      redZoneKm: data.redZoneKm.present ? data.redZoneKm.value : this.redZoneKm,
+      yellowZoneKm: data.yellowZoneKm.present
+          ? data.yellowZoneKm.value
+          : this.yellowZoneKm,
+      greenZoneKm: data.greenZoneKm.present
+          ? data.greenZoneKm.value
+          : this.greenZoneKm,
       active: data.active.present ? data.active.value : this.active,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       cachedAt: data.cachedAt.present ? data.cachedAt.value : this.cachedAt,
@@ -3581,6 +3696,9 @@ class EmergencyAlert extends DataClass implements Insertable<EmergencyAlert> {
           ..write('latitude: $latitude, ')
           ..write('longitude: $longitude, ')
           ..write('radiusKm: $radiusKm, ')
+          ..write('redZoneKm: $redZoneKm, ')
+          ..write('yellowZoneKm: $yellowZoneKm, ')
+          ..write('greenZoneKm: $greenZoneKm, ')
           ..write('active: $active, ')
           ..write('createdAt: $createdAt, ')
           ..write('cachedAt: $cachedAt')
@@ -3600,6 +3718,9 @@ class EmergencyAlert extends DataClass implements Insertable<EmergencyAlert> {
     latitude,
     longitude,
     radiusKm,
+    redZoneKm,
+    yellowZoneKm,
+    greenZoneKm,
     active,
     createdAt,
     cachedAt,
@@ -3618,6 +3739,9 @@ class EmergencyAlert extends DataClass implements Insertable<EmergencyAlert> {
           other.latitude == this.latitude &&
           other.longitude == this.longitude &&
           other.radiusKm == this.radiusKm &&
+          other.redZoneKm == this.redZoneKm &&
+          other.yellowZoneKm == this.yellowZoneKm &&
+          other.greenZoneKm == this.greenZoneKm &&
           other.active == this.active &&
           other.createdAt == this.createdAt &&
           other.cachedAt == this.cachedAt);
@@ -3634,6 +3758,9 @@ class EmergencyAlertsCompanion extends UpdateCompanion<EmergencyAlert> {
   final Value<double?> latitude;
   final Value<double?> longitude;
   final Value<double?> radiusKm;
+  final Value<double?> redZoneKm;
+  final Value<double?> yellowZoneKm;
+  final Value<double?> greenZoneKm;
   final Value<bool> active;
   final Value<DateTime> createdAt;
   final Value<DateTime> cachedAt;
@@ -3649,6 +3776,9 @@ class EmergencyAlertsCompanion extends UpdateCompanion<EmergencyAlert> {
     this.latitude = const Value.absent(),
     this.longitude = const Value.absent(),
     this.radiusKm = const Value.absent(),
+    this.redZoneKm = const Value.absent(),
+    this.yellowZoneKm = const Value.absent(),
+    this.greenZoneKm = const Value.absent(),
     this.active = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.cachedAt = const Value.absent(),
@@ -3665,6 +3795,9 @@ class EmergencyAlertsCompanion extends UpdateCompanion<EmergencyAlert> {
     this.latitude = const Value.absent(),
     this.longitude = const Value.absent(),
     this.radiusKm = const Value.absent(),
+    this.redZoneKm = const Value.absent(),
+    this.yellowZoneKm = const Value.absent(),
+    this.greenZoneKm = const Value.absent(),
     this.active = const Value.absent(),
     required DateTime createdAt,
     required DateTime cachedAt,
@@ -3686,6 +3819,9 @@ class EmergencyAlertsCompanion extends UpdateCompanion<EmergencyAlert> {
     Expression<double>? latitude,
     Expression<double>? longitude,
     Expression<double>? radiusKm,
+    Expression<double>? redZoneKm,
+    Expression<double>? yellowZoneKm,
+    Expression<double>? greenZoneKm,
     Expression<bool>? active,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? cachedAt,
@@ -3702,6 +3838,9 @@ class EmergencyAlertsCompanion extends UpdateCompanion<EmergencyAlert> {
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (radiusKm != null) 'radius_km': radiusKm,
+      if (redZoneKm != null) 'red_zone_km': redZoneKm,
+      if (yellowZoneKm != null) 'yellow_zone_km': yellowZoneKm,
+      if (greenZoneKm != null) 'green_zone_km': greenZoneKm,
       if (active != null) 'active': active,
       if (createdAt != null) 'created_at': createdAt,
       if (cachedAt != null) 'cached_at': cachedAt,
@@ -3720,6 +3859,9 @@ class EmergencyAlertsCompanion extends UpdateCompanion<EmergencyAlert> {
     Value<double?>? latitude,
     Value<double?>? longitude,
     Value<double?>? radiusKm,
+    Value<double?>? redZoneKm,
+    Value<double?>? yellowZoneKm,
+    Value<double?>? greenZoneKm,
     Value<bool>? active,
     Value<DateTime>? createdAt,
     Value<DateTime>? cachedAt,
@@ -3736,6 +3878,9 @@ class EmergencyAlertsCompanion extends UpdateCompanion<EmergencyAlert> {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       radiusKm: radiusKm ?? this.radiusKm,
+      redZoneKm: redZoneKm ?? this.redZoneKm,
+      yellowZoneKm: yellowZoneKm ?? this.yellowZoneKm,
+      greenZoneKm: greenZoneKm ?? this.greenZoneKm,
       active: active ?? this.active,
       createdAt: createdAt ?? this.createdAt,
       cachedAt: cachedAt ?? this.cachedAt,
@@ -3776,6 +3921,15 @@ class EmergencyAlertsCompanion extends UpdateCompanion<EmergencyAlert> {
     if (radiusKm.present) {
       map['radius_km'] = Variable<double>(radiusKm.value);
     }
+    if (redZoneKm.present) {
+      map['red_zone_km'] = Variable<double>(redZoneKm.value);
+    }
+    if (yellowZoneKm.present) {
+      map['yellow_zone_km'] = Variable<double>(yellowZoneKm.value);
+    }
+    if (greenZoneKm.present) {
+      map['green_zone_km'] = Variable<double>(greenZoneKm.value);
+    }
     if (active.present) {
       map['active'] = Variable<bool>(active.value);
     }
@@ -3804,6 +3958,9 @@ class EmergencyAlertsCompanion extends UpdateCompanion<EmergencyAlert> {
           ..write('latitude: $latitude, ')
           ..write('longitude: $longitude, ')
           ..write('radiusKm: $radiusKm, ')
+          ..write('redZoneKm: $redZoneKm, ')
+          ..write('yellowZoneKm: $yellowZoneKm, ')
+          ..write('greenZoneKm: $greenZoneKm, ')
           ..write('active: $active, ')
           ..write('createdAt: $createdAt, ')
           ..write('cachedAt: $cachedAt, ')
@@ -5832,6 +5989,9 @@ typedef $$EmergencyAlertsTableCreateCompanionBuilder =
       Value<double?> latitude,
       Value<double?> longitude,
       Value<double?> radiusKm,
+      Value<double?> redZoneKm,
+      Value<double?> yellowZoneKm,
+      Value<double?> greenZoneKm,
       Value<bool> active,
       required DateTime createdAt,
       required DateTime cachedAt,
@@ -5849,6 +6009,9 @@ typedef $$EmergencyAlertsTableUpdateCompanionBuilder =
       Value<double?> latitude,
       Value<double?> longitude,
       Value<double?> radiusKm,
+      Value<double?> redZoneKm,
+      Value<double?> yellowZoneKm,
+      Value<double?> greenZoneKm,
       Value<bool> active,
       Value<DateTime> createdAt,
       Value<DateTime> cachedAt,
@@ -5911,6 +6074,21 @@ class $$EmergencyAlertsTableFilterComposer
 
   ColumnFilters<double> get radiusKm => $composableBuilder(
     column: $table.radiusKm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get redZoneKm => $composableBuilder(
+    column: $table.redZoneKm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get yellowZoneKm => $composableBuilder(
+    column: $table.yellowZoneKm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get greenZoneKm => $composableBuilder(
+    column: $table.greenZoneKm,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5989,6 +6167,21 @@ class $$EmergencyAlertsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get redZoneKm => $composableBuilder(
+    column: $table.redZoneKm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get yellowZoneKm => $composableBuilder(
+    column: $table.yellowZoneKm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get greenZoneKm => $composableBuilder(
+    column: $table.greenZoneKm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get active => $composableBuilder(
     column: $table.active,
     builder: (column) => ColumnOrderings(column),
@@ -6043,6 +6236,19 @@ class $$EmergencyAlertsTableAnnotationComposer
 
   GeneratedColumn<double> get radiusKm =>
       $composableBuilder(column: $table.radiusKm, builder: (column) => column);
+
+  GeneratedColumn<double> get redZoneKm =>
+      $composableBuilder(column: $table.redZoneKm, builder: (column) => column);
+
+  GeneratedColumn<double> get yellowZoneKm => $composableBuilder(
+    column: $table.yellowZoneKm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get greenZoneKm => $composableBuilder(
+    column: $table.greenZoneKm,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get active =>
       $composableBuilder(column: $table.active, builder: (column) => column);
@@ -6101,6 +6307,9 @@ class $$EmergencyAlertsTableTableManager
                 Value<double?> latitude = const Value.absent(),
                 Value<double?> longitude = const Value.absent(),
                 Value<double?> radiusKm = const Value.absent(),
+                Value<double?> redZoneKm = const Value.absent(),
+                Value<double?> yellowZoneKm = const Value.absent(),
+                Value<double?> greenZoneKm = const Value.absent(),
                 Value<bool> active = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> cachedAt = const Value.absent(),
@@ -6116,6 +6325,9 @@ class $$EmergencyAlertsTableTableManager
                 latitude: latitude,
                 longitude: longitude,
                 radiusKm: radiusKm,
+                redZoneKm: redZoneKm,
+                yellowZoneKm: yellowZoneKm,
+                greenZoneKm: greenZoneKm,
                 active: active,
                 createdAt: createdAt,
                 cachedAt: cachedAt,
@@ -6133,6 +6345,9 @@ class $$EmergencyAlertsTableTableManager
                 Value<double?> latitude = const Value.absent(),
                 Value<double?> longitude = const Value.absent(),
                 Value<double?> radiusKm = const Value.absent(),
+                Value<double?> redZoneKm = const Value.absent(),
+                Value<double?> yellowZoneKm = const Value.absent(),
+                Value<double?> greenZoneKm = const Value.absent(),
                 Value<bool> active = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime cachedAt,
@@ -6148,6 +6363,9 @@ class $$EmergencyAlertsTableTableManager
                 latitude: latitude,
                 longitude: longitude,
                 radiusKm: radiusKm,
+                redZoneKm: redZoneKm,
+                yellowZoneKm: yellowZoneKm,
+                greenZoneKm: greenZoneKm,
                 active: active,
                 createdAt: createdAt,
                 cachedAt: cachedAt,

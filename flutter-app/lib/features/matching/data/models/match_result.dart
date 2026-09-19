@@ -1,5 +1,6 @@
 abstract class MatchResult {
   MatchResult({
+    this.incidentId,
     required this.recordId,
     required this.name,
     required this.age,
@@ -11,6 +12,7 @@ abstract class MatchResult {
     this.explanation,
   });
 
+  final String? incidentId;
   final String recordId;
   final String name;
   final int age;
@@ -25,6 +27,7 @@ abstract class MatchResult {
 
 class NormalMatchResult extends MatchResult {
   NormalMatchResult({
+    super.incidentId,
     required super.recordId,
     required super.name,
     required super.age,
@@ -44,6 +47,7 @@ class NormalMatchResult extends MatchResult {
   factory NormalMatchResult.fromJson(Map<String, dynamic> json) {
     return NormalMatchResult(
       recordId: _requiredString(json, 'recordId', 'record_id'),
+      incidentId: _optionalString(json, 'incidentId', 'incident_id'),
       name: _requiredString(json, 'name'),
       age: _requiredInt(json, 'age'),
       photoUrl: _optionalString(json, 'photoUrl', 'photo_url'),
@@ -65,6 +69,7 @@ class NormalMatchResult extends MatchResult {
 
 class CriticalMatchResult extends MatchResult {
   CriticalMatchResult({
+    super.incidentId,
     required super.recordId,
     required super.name,
     required super.age,
@@ -84,6 +89,7 @@ class CriticalMatchResult extends MatchResult {
     // photoUrl or clothingPhotoUrl property on this presentation model.
     return CriticalMatchResult(
       recordId: _requiredString(json, 'recordId', 'record_id'),
+      incidentId: _optionalString(json, 'incidentId', 'incident_id'),
       name: _requiredString(json, 'name'),
       age: _requiredInt(json, 'age'),
       lastKnownClothing: _optionalString(json, 'lastKnownClothing', 'last_known_clothing'),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -36,11 +37,22 @@ class _EmergencyCenterScreenState extends State<EmergencyCenterScreen> {
   String? _locationMessage;
   String? _errorMessage;
   bool _loading = true;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _loadAlerts(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -109,6 +121,7 @@ class _EmergencyCenterScreenState extends State<EmergencyCenterScreen> {
       }
       final zone = DisasterZone(
         id: alert.id,
+        incidentId: alert.incidentId,
         disasterType: alert.disasterType,
         latitude: alert.latitude!,
         longitude: alert.longitude!,
@@ -116,13 +129,18 @@ class _EmergencyCenterScreenState extends State<EmergencyCenterScreen> {
         severity: alert.severity,
         title: alert.title,
         active: alert.active,
+        redZoneKm: alert.redZoneKm,
+        yellowZoneKm: alert.yellowZoneKm,
+        greenZoneKm: alert.greenZoneKm,
       );
-      final result = SafetyCalculator.classify(
+      final result = SafetyCalculator.classifyWithFixedZones(
         userLatitude: location.latitude,
         userLongitude: location.longitude,
         disasterLatitude: zone.latitude,
         disasterLongitude: zone.longitude,
-        radiusKm: zone.radiusKm,
+        redZoneKm: zone.redZoneKm,
+        yellowZoneKm: zone.yellowZoneKm,
+        greenZoneKm: zone.greenZoneKm,
       );
       if (nearest == null ||
           result.distanceFromDisasterKm! <

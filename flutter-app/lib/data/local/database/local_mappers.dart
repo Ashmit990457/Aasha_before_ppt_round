@@ -22,7 +22,64 @@ EmergencyAlert emergencyAlertFromLocal(local.EmergencyAlert row) =>
       radiusKm: row.radiusKm,
       createdAt: row.createdAt,
       active: row.active,
+      redZoneKm: row.redZoneKm ?? _defaultRedZone(
+        EmergencySeverity.values.firstWhere(
+          (value) => value.name == row.severity,
+          orElse: () => EmergencySeverity.moderate,
+        ),
+      ),
+      yellowZoneKm: row.yellowZoneKm ?? _defaultYellowZone(
+        EmergencySeverity.values.firstWhere(
+          (value) => value.name == row.severity,
+          orElse: () => EmergencySeverity.moderate,
+        ),
+      ),
+      greenZoneKm: row.greenZoneKm ?? _defaultGreenZone(
+        EmergencySeverity.values.firstWhere(
+          (value) => value.name == row.severity,
+          orElse: () => EmergencySeverity.moderate,
+        ),
+      ),
     );
+
+double _defaultRedZone(EmergencySeverity severity) {
+  switch (severity) {
+    case EmergencySeverity.critical:
+      return 3.0;
+    case EmergencySeverity.severe:
+      return 2.0;
+    case EmergencySeverity.moderate:
+      return 1.0;
+    default:
+      return 1.0;
+  }
+}
+
+double _defaultYellowZone(EmergencySeverity severity) {
+  switch (severity) {
+    case EmergencySeverity.critical:
+      return 7.0;
+    case EmergencySeverity.severe:
+      return 5.0;
+    case EmergencySeverity.moderate:
+      return 3.0;
+    default:
+      return 3.0;
+  }
+}
+
+double _defaultGreenZone(EmergencySeverity severity) {
+  switch (severity) {
+    case EmergencySeverity.critical:
+      return 15.0;
+    case EmergencySeverity.severe:
+      return 10.0;
+    case EmergencySeverity.moderate:
+      return 5.0;
+    default:
+      return 5.0;
+  }
+}
 
 local.EmergencyAlertsCompanion emergencyAlertToLocal(
   EmergencyAlert value, {
@@ -38,6 +95,9 @@ local.EmergencyAlertsCompanion emergencyAlertToLocal(
   latitude: Value(value.latitude),
   longitude: Value(value.longitude),
   radiusKm: Value(value.radiusKm),
+  redZoneKm: Value(value.redZoneKm),
+  yellowZoneKm: Value(value.yellowZoneKm),
+  greenZoneKm: Value(value.greenZoneKm),
   active: Value(value.active),
   createdAt: value.createdAt,
   cachedAt: cachedAt ?? DateTime.now(),

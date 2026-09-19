@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/photo_url_helper.dart';
 import '../../../core/common_widgets/app_button.dart';
 import '../../../features/matching/data/models/match_request.dart';
 import '../../../features/matching/data/models/match_result.dart';
@@ -198,6 +199,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 
   Widget _buildRecordCard(BuildContext context, NormalMatchResult record) {
+    final candidatePhotoUrl = PhotoUrlHelper.getDisplayUrl(record.photoUrl);
+    debugPrint('[RESULT-IMAGE-DEBUG] record_id=${record.recordId}');
+    debugPrint('[RESULT-IMAGE-DEBUG] raw_photo_url=${record.photoUrl}');
+    debugPrint('[RESULT-IMAGE-DEBUG] resolved_photo_url=$candidatePhotoUrl');
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
@@ -206,7 +211,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: record.photoUrl == null || record.photoUrl!.isEmpty
+              child: candidatePhotoUrl == null || candidatePhotoUrl.isEmpty
                   ? Container(
                       width: 80,
                       height: 80,
@@ -214,11 +219,28 @@ class _ResultsScreenState extends State<ResultsScreen> {
                       child: const Icon(Icons.person, color: Colors.grey),
                     )
                   : Image.network(
-                      record.photoUrl!,
+                      candidatePhotoUrl,
                       width: 80,
                       height: 80,
                       fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Container(
+                          width: 80,
+                          height: 80,
+                          color: Colors.grey[200],
+                          alignment: Alignment.center,
+                          child: const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      },
                       errorBuilder: (context, error, stackTrace) {
+                        debugPrint(
+                          '[RESULT-IMAGE-DEBUG] Image.network error=$error',
+                        );
                         return Container(
                           width: 80,
                           height: 80,

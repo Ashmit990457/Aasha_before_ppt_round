@@ -1,4 +1,1 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Development-only HTTP access for the emulator or LAN backend. -->
-    <application android:usesCleartextTraffic="true" />
-</manifest>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

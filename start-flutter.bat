@@ -1,3 +1,3 @@
 @echo off
-cd /d "C:\Users\Udaypratap Singh\StudioProjects\Aasha-Final\flutter-app"
-flutter run
+cd /d "%~dp0flutter-app"
+flutter run -d windows --dart-define=API_BASE_URL=http://localhost:8080

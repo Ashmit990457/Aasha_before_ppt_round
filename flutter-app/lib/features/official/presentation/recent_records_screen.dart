@@ -75,7 +75,7 @@ class _RecentRecordsScreenState extends State<RecentRecordsScreen> {
                 Icon(Icons.sync, size: 16, color: Colors.blue),
                 SizedBox(width: 8),
                 Text(
-                  'Showing latest verified records from Firestore',
+                  'Showing latest verified records from Spring Boot',
                   style: TextStyle(fontSize: 12, color: Colors.blue),
                 ),
               ],

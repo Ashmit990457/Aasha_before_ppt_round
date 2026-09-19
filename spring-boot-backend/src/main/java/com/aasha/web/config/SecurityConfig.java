@@ -16,7 +16,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import java.util.List;
@@ -27,7 +29,14 @@ import java.util.List;
 public class SecurityConfig {
 
     @Bean
-    public RestTemplate restTemplate() { return new RestTemplate(); }
+    public RestTemplate restTemplate(
+            @Value("${matching.connect-timeout-ms:5000}") int connectTimeoutMs,
+            @Value("${matching.read-timeout-ms:120000}") int readTimeoutMs) {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(connectTimeoutMs);
+        factory.setReadTimeout(readTimeoutMs);
+        return new RestTemplate(factory);
+    }
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UserRepository userRepo;
@@ -85,6 +94,8 @@ public class SecurityConfig {
                 // Everything else public
                 .anyRequest().permitAll()
             )
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint((request, response, exception) -> response.sendError(401)))
             .formLogin(form -> form
                 .loginPage("/login")
                 .loginProcessingUrl("/login")

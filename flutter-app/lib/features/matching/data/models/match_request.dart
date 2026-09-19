@@ -4,6 +4,7 @@
 /// an image transport or storage implementation.
 class MatchRequest {
   MatchRequest({
+    required this.incidentId,
     required this.name,
     required this.age,
     this.photoReference,
@@ -11,6 +12,7 @@ class MatchRequest {
     this.additionalDetails,
   });
 
+  final String incidentId;
   final String name;
   final int age;
   final String? photoReference;
@@ -25,7 +27,11 @@ class MatchRequest {
   }
 
   Map<String, dynamic> toJson() {
-    final json = <String, dynamic>{'name': name.trim(), 'age': age};
+    final json = <String, dynamic>{
+      'incident_id': incidentId,
+      'name': name.trim(),
+      'age': age,
+    };
     if (photoReference != null && photoReference!.trim().isNotEmpty) {
       json['photo'] = photoReference;
     }

@@ -88,6 +88,9 @@ class EmergencyAlerts extends Table {
   RealColumn get latitude => real().nullable()();
   RealColumn get longitude => real().nullable()();
   RealColumn get radiusKm => real().nullable()();
+  RealColumn get redZoneKm => real().nullable()();
+  RealColumn get yellowZoneKm => real().nullable()();
+  RealColumn get greenZoneKm => real().nullable()();
   BoolColumn get active => boolean().withDefault(const Constant(true))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get cachedAt => dateTime()();
@@ -116,7 +119,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -138,6 +141,11 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 4) {
         await m.createTable(emergencyAlerts);
+      }
+      if (from < 5) {
+        await m.addColumn(emergencyAlerts, emergencyAlerts.redZoneKm as GeneratedColumn);
+        await m.addColumn(emergencyAlerts, emergencyAlerts.yellowZoneKm as GeneratedColumn);
+        await m.addColumn(emergencyAlerts, emergencyAlerts.greenZoneKm as GeneratedColumn);
       }
     },
   );

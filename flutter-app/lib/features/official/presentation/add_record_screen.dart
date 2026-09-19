@@ -15,6 +15,8 @@ import '../../images/data/image_upload_api_service.dart';
 import '../../images/data/local_image.dart';
 import '../../images/data/local_image_store.dart';
 import '../../images/presentation/image_source_picker.dart';
+import '../../incidents/data/incident_repository.dart';
+import '../../incidents/data/models/incident.dart';
 
 class AddRecordScreen extends StatefulWidget {
   final RecordType type;
@@ -29,6 +31,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _campRepository = CampRepository();
   final _recordRepository = OfficialNormalRecordRepository();
+  late final IncidentRepository _incidentRepository;
 
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
@@ -36,6 +39,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 
   List<Camp> _activeCamps = [];
   Camp? _selectedCamp;
+  String? _selectedIncidentId;
+  List<Incident> _deduplicatedIncidents = const [];
   DateTime _foundAt = DateTime.now();
   bool _isLoading = false;
   bool _isFetchingCamps = true;
@@ -46,7 +51,23 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
   @override
   void initState() {
     super.initState();
+    final authService = context.read<AppState>().authService;
+    _incidentRepository = IncidentRepository(authService: authService);
     _fetchActiveCamps();
+    _fetchIncidents();
+  }
+
+  Future<void> _fetchIncidents() async {
+    try {
+      final incidents = await _incidentRepository.getActiveSearchable();
+      final uniqueMap = <String, Incident>{};
+      for (final incident in incidents) {
+        if (incident.id.isNotEmpty) {
+          uniqueMap[incident.id] = incident;
+        }
+      }
+      if (mounted) setState(() => _deduplicatedIncidents = uniqueMap.values.toList());
+    } catch (e) { debugPrint('[ADD NORMAL][INCIDENT_LOOKUP] failed: $e'); }
   }
 
   Future<void> _fetchActiveCamps() async {
@@ -70,7 +91,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 
   Future<void> _saveRecord() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedCamp == null) {
+    if (_selectedCamp == null || _selectedIncidentId == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Please select a camp.')));
@@ -90,6 +111,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
       if (widget.type == RecordType.normal) {
         final record = NormalRecord(
           id: '',
+          incidentId: _selectedIncidentId!,
           name: _nameController.text.trim(),
           age: int.parse(_ageController.text),
           campId: _selectedCamp!.id,
@@ -247,6 +269,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                     const SizedBox(height: 16),
                     _buildCampDropdown(),
                     const SizedBox(height: 16),
+                    _buildIncidentDropdown(),
+                    const SizedBox(height: 16),
                     _buildDatePicker(),
                     const SizedBox(height: 16),
                     AppTextField(
@@ -358,6 +382,34 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
           validator: (val) => val == null ? 'Camp is required' : null,
         ),
       ],
+    );
+  }
+
+  Widget _buildIncidentDropdown() {
+    final uniqueMap = <String, Incident>{};
+    for (final incident in _deduplicatedIncidents) {
+      if (incident.id.isNotEmpty) {
+        uniqueMap[incident.id] = incident;
+      }
+    }
+    final deduplicated = uniqueMap.values.toList();
+    final safeSelectedId = _selectedIncidentId != null &&
+        deduplicated.any((i) => i.id == _selectedIncidentId)
+        ? _selectedIncidentId
+        : null;
+    return DropdownButtonFormField<String>(
+      value: safeSelectedId,
+      decoration: const InputDecoration(
+        labelText: 'Disaster Incident',
+        helperText: 'Every field record belongs to one incident.',
+        border: OutlineInputBorder(),
+      ),
+      items: deduplicated.map((incident) => DropdownMenuItem(
+        value: incident.id,
+        child: Text(incident.name),
+      )).toList(),
+      onChanged: (value) => setState(() => _selectedIncidentId = value),
+      validator: (value) => value == null ? 'Incident is required' : null,
     );
   }
 

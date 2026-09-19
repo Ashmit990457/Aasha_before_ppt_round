@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record MatchCandidate(
         @JsonProperty("record_id") String recordId,
+        @JsonProperty("incident_id") String incidentId,
         @JsonProperty("record_type") String recordType,
         String name,
         Integer age,

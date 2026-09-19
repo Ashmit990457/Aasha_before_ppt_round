@@ -4,6 +4,8 @@ from enum import Enum
 from io import BytesIO
 from typing import Optional
 from uuid import uuid4
+import os
+from urllib.parse import quote, urlparse
 
 
 class ImageAccessType(str, Enum):
@@ -127,6 +129,61 @@ class InMemoryImageStorageService(ImageStorageService):
         image = StoredImage(storage_id, category, access_type, content_type, len(data))
         self._images[storage_id] = (image, data)
         return image
+
+
+class MinioImageStorageService(ImageStorageService):
+    """Production read adapter for the shared Aasha MinIO bucket.
+
+    Spring Boot owns uploads and database references; this service only reads
+    candidate objects during ranking and creates short-lived display URLs.
+    """
+
+    def __init__(self, endpoint=None, access_key=None, secret_key=None, bucket=None):
+        from minio import Minio
+
+        raw_endpoint = endpoint or os.getenv("MINIO_ENDPOINT")
+        access_key = access_key or os.getenv("MINIO_ACCESS_KEY")
+        secret_key = secret_key or os.getenv("MINIO_SECRET_KEY")
+        self.bucket = bucket or os.getenv("MINIO_BUCKET", "aasha-photos")
+        if not raw_endpoint or not access_key or not secret_key:
+            raise ValueError("MINIO_ENDPOINT, MINIO_ACCESS_KEY and MINIO_SECRET_KEY are required")
+        parsed = urlparse(raw_endpoint if "://" in raw_endpoint else f"http://{raw_endpoint}")
+        self.client = Minio(parsed.netloc, access_key=access_key, secret_key=secret_key,
+                            secure=parsed.scheme == "https")
+
+    def get_private_image(self, storage_id: str) -> bytes:
+        from contextlib import closing
+        with closing(self.client.get_object(self.bucket, _storage_key(storage_id))) as response:
+            return response.read()
+
+    def public_image_url(self, storage_id: str) -> str:
+        key = _storage_key(storage_id)
+        media_base_url = os.getenv("MEDIA_BASE_URL")
+        if not media_base_url:
+            raise ValueError("MEDIA_BASE_URL is required for phone-reachable image URLs")
+        return f"{media_base_url.rstrip('/')}/api/v1/images/file/{quote(key, safe='/')}"
+
+    def delete_image(self, storage_id: str) -> None:
+        self.client.remove_object(self.bucket, _storage_key(storage_id))
+
+    def _uploads_are_backend_owned(self, *_args, **_kwargs):
+        raise NotImplementedError("Image uploads are owned by Spring Boot")
+
+    upload_normal_photo = _uploads_are_backend_owned
+    upload_critical_photo = _uploads_are_backend_owned
+    upload_critical_clothing = _uploads_are_backend_owned
+    upload_match_input = _uploads_are_backend_owned
+
+
+def _storage_key(storage_id: str) -> str:
+    value = storage_id.strip()
+    if value.startswith("{"):
+        import json
+        decoded = json.loads(value)
+        value = decoded.get("storageId") or decoded.get("storage_id") or ""
+    if not value or value.startswith("/") or ".." in value or "\\" in value:
+        raise ValueError("Invalid MinIO storage reference")
+    return value
 
 
 MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024

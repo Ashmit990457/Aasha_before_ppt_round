@@ -56,15 +56,15 @@ class UserSosServiceTest {
 
     @Test
     void rejectsInvalidCoordinatesAndAccuracy() {
-        SosRequest request = validRequest();
-        request.setLatitude(91.0);
+        SosRequest invalidLatitude = validRequest();
+        invalidLatitude.setLatitude(91.0);
         assertThrows(IllegalArgumentException.class,
-                () -> service.create(request, "authenticated-user"));
+                () -> service.create(invalidLatitude, "authenticated-user"));
 
-        request = validRequest();
-        request.setAccuracy(-1.0);
+        SosRequest invalidAccuracy = validRequest();
+        invalidAccuracy.setAccuracy(-1.0);
         assertThrows(IllegalArgumentException.class,
-                () -> service.create(request, "authenticated-user"));
+                () -> service.create(invalidAccuracy, "authenticated-user"));
     }
 
     @Test

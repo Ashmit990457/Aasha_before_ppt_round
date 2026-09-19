@@ -1,4 +1,5 @@
 import re
+import os
 from dataclasses import dataclass
 from typing import Optional
 
@@ -7,14 +8,15 @@ from .text_similarity import TextSimilarityService
 
 @dataclass(frozen=True)
 class MatchScoringConfig:
-    # Step 12D: Updated Prototype Weights
-    # Face is the primary identity signal; CLIP is a secondary visual anchor.
-    name_weight: float = 0.25
-    age_weight: float = 0.15
-    location_weight: float = 0.10
-    details_weight: float = 0.15
-    clip_weight: float = 0.05
-    face_weight: float = 0.30
+    # Metadata-only searches retain their relative behavior because active
+    # components are always renormalized. With a photo, visual evidence is
+    # deliberately a major signal without becoming the only signal.
+    name_weight: float = 0.15
+    age_weight: float = 0.10
+    location_weight: float = 0.05
+    details_weight: float = 0.10
+    clip_weight: float = 0.25
+    face_weight: float = 0.35
 
     # Prototype performance bound for image work. Metadata still ranks every
     # candidate; CLIP/Face are applied only to this shortlist.
@@ -24,6 +26,31 @@ class MatchScoringConfig:
     threshold_strong: float = 90.0
     threshold_possible: float = 75.0
     threshold_weak: float = 60.0
+
+    @classmethod
+    def from_environment(cls) -> "MatchScoringConfig":
+        def weight(name: str, default: float) -> float:
+            try:
+                return max(0.0, float(os.getenv(name, default)))
+            except (TypeError, ValueError):
+                return default
+
+        try:
+            shortlist_size = max(
+                1, int(os.getenv("MATCH_IMAGE_SHORTLIST_SIZE", cls.image_shortlist_size))
+            )
+        except (TypeError, ValueError):
+            shortlist_size = cls.image_shortlist_size
+
+        return cls(
+            name_weight=weight("MATCH_WEIGHT_NAME", cls.name_weight),
+            age_weight=weight("MATCH_WEIGHT_AGE", cls.age_weight),
+            location_weight=weight("MATCH_WEIGHT_LOCATION", cls.location_weight),
+            details_weight=weight("MATCH_WEIGHT_DETAILS", cls.details_weight),
+            clip_weight=weight("MATCH_WEIGHT_CLIP", cls.clip_weight),
+            face_weight=weight("MATCH_WEIGHT_FACE", cls.face_weight),
+            image_shortlist_size=shortlist_size,
+        )
 
 
 @dataclass(frozen=True)
@@ -42,6 +69,7 @@ class CandidateRecord:
     last_known_clothing: Optional[str] = None
     found_location: Optional[str] = None
     additional_details: Optional[str] = None
+    incident_id: Optional[str] = None
 
     def searchable_text(self) -> str:
         values = [

@@ -64,7 +64,7 @@ class _OfficialPhotoViewState extends State<OfficialPhotoView> {
       storageId = raw;
     }
 
-    if (storageId != null && storageId.startsWith('cloudinary|')) {
+    if (storageId != null && storageId.isNotEmpty && !storageId.contains('..')) {
       _urlFuture = _imageService.getImageUrl(storageId).then((url) {
         if (mounted) setState(() => _resolvedUrl = url);
         return url;

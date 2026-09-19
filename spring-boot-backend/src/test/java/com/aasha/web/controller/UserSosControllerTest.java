@@ -1,8 +1,8 @@
 package com.aasha.web.controller;
 
-import com.aasha.web.config.JwtAuthFilter;
 import com.aasha.web.dto.SosResponse;
 import com.aasha.web.repository.UserRepository;
+import com.aasha.web.service.JwtService;
 import com.aasha.web.service.UserSosService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,13 +22,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @WebMvcTest(UserSosController.class)
 @Import(com.aasha.web.config.SecurityConfig.class)
 class UserSosControllerTest {
     @Autowired MockMvc mockMvc;
     @MockBean UserSosService service;
-    @MockBean JwtAuthFilter jwtAuthFilter;
+    @MockBean JwtService jwtService;
     @MockBean UserRepository userRepository;
 
     @Test
@@ -63,7 +64,10 @@ class UserSosControllerTest {
         when(service.all()).thenReturn(List.of(response()));
 
         mockMvc.perform(get("/api/sos"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("sos-1"))
+                .andExpect(jsonPath("$[0].status").value("RECEIVED"))
+                .andExpect(jsonPath("$[0].updatedAt").exists());
     }
 
             @Test
@@ -97,7 +101,8 @@ class UserSosControllerTest {
 
     private SosResponse response() {
         return new SosResponse("sos-1", "user-1", 19.1, 72.9, 8.0,
-                "Need help", "RECEIVED", LocalDateTime.now(), LocalDateTime.now());
+                "Need help", "RECEIVED", LocalDateTime.now(), LocalDateTime.now(),
+                LocalDateTime.now());
     }
 
     private String validJson() {

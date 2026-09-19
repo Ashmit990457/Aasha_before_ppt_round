@@ -1,0 +1,1 @@
+ALTER TABLE incidents ADD COLUMN severity VARCHAR(20) NULL;

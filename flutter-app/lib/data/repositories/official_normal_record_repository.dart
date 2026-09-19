@@ -11,6 +11,7 @@ class OfficialNormalRecordRepository {
       Uri.parse('$_baseUrl/api/normal-records'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
+        'incident_id': record.incidentId,
         'name': record.name,
         'age': record.age,
         'photoUrl': record.photoUrl,

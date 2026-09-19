@@ -65,7 +65,7 @@ class LocalEmergencyRepository implements EmergencyRepository {
     return const SosSubmissionResult(
       state: SosDeliveryState.pendingLocal,
       message:
-          'No internet connection. SOS has been saved on this device and will be sent when connection is restored.',
+        'No internet connection. SOS has been saved locally on this device and will sync when connection is restored.',
     );
   }
 }

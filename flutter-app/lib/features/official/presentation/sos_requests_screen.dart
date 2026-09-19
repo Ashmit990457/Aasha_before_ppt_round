@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -22,14 +23,27 @@ class _SosRequestsScreenState extends State<SosRequestsScreen> {
   OfficialSosStatus? _filter;
   String? _error;
   bool _loading = true;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _load(trigger: 'initial');
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 15),
+      (_) => _load(trigger: 'timer'),
+    );
   }
 
-  Future<void> _load() async {
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _load({String trigger = 'manual'}) async {
+    debugPrint('[SOS-OFFICIAL-DEBUG] refresh_trigger=$trigger');
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -37,6 +51,9 @@ class _SosRequestsScreenState extends State<SosRequestsScreen> {
     try {
       final requests = await _repository.getSosRequests(status: _filter);
       if (!mounted) return;
+      debugPrint(
+        '[SOS-OFFICIAL-DEBUG] screen_requests_loaded count=${requests.length}',
+      );
       setState(() {
         _requests = requests;
         _loading = false;
@@ -92,7 +109,7 @@ class _SosRequestsScreenState extends State<SosRequestsScreen> {
                 : _requests.isEmpty
                 ? const Center(child: Text('No SOS requests found.'))
                 : RefreshIndicator(
-                    onRefresh: _load,
+                onRefresh: () => _load(trigger: 'manual'),
                     child: ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: _requests.length,
@@ -134,7 +151,7 @@ class _SosRequestsScreenState extends State<SosRequestsScreen> {
                   SosRequestDetailsScreen(repository: _repository, sos: sos),
             ),
           );
-          _load();
+          _load(trigger: 'details-return');
         },
       ),
     );

@@ -11,6 +11,9 @@ public class Alert {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "incident_id", length = 64)
+    private String incidentId;
+
     @Column(nullable = false)
     private String title;
 
@@ -51,6 +54,8 @@ public class Alert {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public String getIncidentId() { return incidentId; }
+    public void setIncidentId(String value) { incidentId = value; }
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
     public String getMessage() { return message; }
